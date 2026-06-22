@@ -93,10 +93,19 @@ Validación de Compose y estado en WSL:
 wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/mesia/Desktop/Universidad/Distribuidas/2P && docker compose config --quiet && docker compose ps -a"
 ```
 
+## Datos de demostración
+
+Para borrar únicamente las bases de este monorepo y crear un conjunto completo desde cero:
+
+```powershell
+.\scripts\seed-demo.ps1 --reset
+```
+
+Se crean 30 usuarios `USER`, 10 zonas, 150 espacios y 90 vehículos, además del administrador y los roles iniciales. La contraseña compartida de los usuarios demo es `Demo12345!`; úsala exclusivamente en desarrollo. Ejecutar el script sin `--reset` sobre datos ya cargados provocará conflictos por identificadores únicos.
+
 ## Solución de problemas
 
 - Si un contenedor cae, consulta `docker compose logs <servicio> --tail=200` dentro de Ubuntu WSL.
 - Después de cambiar claves o variables de Kong, vuelve a ejecutar el bootstrap y recrea Kong.
 - PostgreSQL 18 usa `/var/lib/postgresql` como punto del volumen de usuarios; Compose ya incluye esa ruta.
 - Para reiniciar desde bases nuevas usa `docker compose down -v` y luego `up --build -d`. Esto elimina únicamente los volúmenes de este monorepo; los volúmenes anteriores no se reutilizan ni se modifican.
-
