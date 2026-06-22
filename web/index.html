@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gateway Distribuidas · Cliente de pruebas</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='14'%3E%F0%9F%9A%AA%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand__logo">GW</span>
+      <div class="brand__text">
+        <h1>Gateway Distribuidas</h1>
+        <p>Cliente de pruebas · Kong + JWT + 3 microservicios</p>
+      </div>
+    </div>
+
+    <div class="topbar__config">
+      <label class="field field--inline">
+        <span>URL base</span>
+        <input id="baseUrl" type="text" value="http://localhost:8000" autocomplete="off" spellcheck="false" />
+      </label>
+      <button id="themeToggle" class="btn btn--ghost" type="button" title="Cambiar tema">◐</button>
+    </div>
+
+    <div class="topbar__session" id="sessionBox" hidden>
+      <div class="session">
+        <span class="session__dot" id="sessionDot"></span>
+        <div class="session__info">
+          <span id="sessionUser">—</span>
+          <small id="sessionRoles">—</small>
+        </div>
+        <span class="session__expires" id="sessionExpires" title="Expiración del access token"></span>
+        <button id="logoutBtn" class="btn btn--ghost" type="button">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <nav class="sidebar" aria-label="Secciones">
+      <button class="sidebar__link is-active" data-section="intro">Inicio</button>
+      <button class="sidebar__link" data-section="auth">Autenticación</button>
+      <button class="sidebar__link" data-section="jwt">JWT Inspector</button>
+      <button class="sidebar__link" data-section="usuarios">Usuarios</button>
+      <button class="sidebar__link" data-section="personas">Personas</button>
+      <button class="sidebar__link" data-section="roles">Roles</button>
+      <button class="sidebar__link" data-section="zonas">Zonas</button>
+      <button class="sidebar__link" data-section="espacios">Espacios</button>
+      <button class="sidebar__link" data-section="vehiculos">Vehículos</button>
+      <button class="sidebar__link" data-section="docs">Documentación API</button>
+      <button class="sidebar__link" data-section="history">Historial</button>
+      <button class="sidebar__link" data-section="help">Ayuda</button>
+      <div class="sidebar__foot">
+        <small>v1.0 · standalone</small>
+      </div>
+    </nav>
+
+    <section class="content" id="content">
+      <!-- Las secciones se renderizan dinámicamente -->
+    </section>
+  </main>
+
+  <template id="tpl-endpoint">
+    <article class="card" data-endpoint>
+      <header class="card__head">
+        <span class="method" data-method></span>
+        <code class="path" data-path></code>
+        <span class="badge" data-perm></span>
+      </header>
+      <p class="card__desc" data-desc></p>
+      <details class="card__hint">
+        <summary>¿Qué debería pasar?</summary>
+        <div data-hint></div>
+      </details>
+      <form class="card__form" data-form>
+        <div class="card__fields" data-fields></div>
+        <div class="card__actions">
+          <button type="submit" class="btn btn--primary">Enviar</button>
+          <button type="button" class="btn btn--ghost" data-action="reset">Restablecer</button>
+          <button type="button" class="btn btn--ghost" data-action="copy">Copiar cURL</button>
+        </div>
+      </form>
+      <section class="card__resp" data-response hidden>
+        <div class="card__resp-head">
+          <span class="status" data-status></span>
+          <span class="time" data-time></span>
+          <button type="button" class="btn btn--ghost btn--xs" data-action="copyResp">Copiar</button>
+        </div>
+        <pre class="code" data-body></pre>
+        <details class="card__resp-headers">
+          <summary>Headers</summary>
+          <pre class="code code--sm" data-headers></pre>
+        </details>
+      </section>
+    </article>
+  </template>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

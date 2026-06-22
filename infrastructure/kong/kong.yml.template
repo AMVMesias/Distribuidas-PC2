@@ -8,7 +8,7 @@ consumers:
         secret: unused-rs256-placeholder
         algorithm: RS256
         rsa_public_key: |
-          __JWT_PUBLIC_KEY__
+__JWT_PUBLIC_KEY__
 
 plugins:
   - name: cors
@@ -35,21 +35,21 @@ services:
     routes:
       - name: auth-register
         paths: ["~/api/v1/auth/register$"]
-        methods: [POST]
+        methods: [POST, OPTIONS]
         strip_path: false
         plugins:
           - name: rate-limiting
             config: { hour: 5, limit_by: ip, policy: local }
       - name: auth-login
         paths: ["~/api/v1/auth/login$"]
-        methods: [POST]
+        methods: [POST, OPTIONS]
         strip_path: false
         plugins:
           - name: rate-limiting
             config: { minute: 10, limit_by: ip, policy: local }
       - name: auth-refresh
         paths: ["~/api/v1/auth/(refresh|logout)$"]
-        methods: [POST]
+        methods: [POST, OPTIONS]
         strip_path: false
         plugins:
           - name: rate-limiting
@@ -70,6 +70,9 @@ services:
             config: { claims_to_verify: [exp] }
           - name: rate-limiting
             config: { minute: 100, limit_by: consumer, policy: local }
+      - name: usuarios-docs
+        paths: ["/usuarios"]
+        strip_path: true
 
   - name: zonas
     url: http://zonas:8080
@@ -86,6 +89,9 @@ services:
             config: { claims_to_verify: [exp] }
           - name: rate-limiting
             config: { minute: 100, limit_by: consumer, policy: local }
+      - name: zonas-docs
+        paths: ["/zonas"]
+        strip_path: true
 
   - name: vehiculos
     url: http://vehiculos:3000
@@ -102,3 +108,6 @@ services:
             config: { claims_to_verify: [exp] }
           - name: rate-limiting
             config: { minute: 100, limit_by: consumer, policy: local }
+      - name: vehiculos-docs
+        paths: ["/vehiculos"]
+        strip_path: true

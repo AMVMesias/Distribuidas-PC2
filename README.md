@@ -1,6 +1,6 @@
 # Gateway Distribuidas
 
-Monorepo de tres microservicios protegidos por **Kong Gateway**. Kong es el único punto expuesto al host (`http://localhost:8000`); los backends, PostgreSQL y la API administrativa de Kong permanecen en redes privadas de Docker.
+Monorepo de tres microservicios protegidos por **Kong Gateway**. La API se expone únicamente mediante Kong (`http://localhost:8000`) y el cliente web está en `http://localhost:9000`; los backends, PostgreSQL y la API administrativa de Kong permanecen en redes privadas de Docker.
 
 ## Arquitectura
 
