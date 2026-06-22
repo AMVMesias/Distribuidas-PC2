@@ -1,0 +1,266 @@
+{
+  "info": {
+    "_postman_id": "53f44ea1-98d0-4eda-9ba8-52f9cb55fb58",
+    "name": "Usuarios API - Ejecucion Ordenada",
+    "description": "Coleccion lista para ejecutar en Postman Runner de arriba hacia abajo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Estado HTTP esperado', function () {",
+          "  pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "roleId",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "personaId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Crear rol",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('roleId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"ADMIN\",\n  \"description\": \"Administrador del sistema\"\n}"
+        },
+        "url": "{{baseUrl}}/api/roles"
+      },
+      "response": []
+    },
+    {
+      "name": "02 - Crear usuario",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('userId', json.idPerson);",
+              "if (json.persona && json.persona.idUuid) {",
+              "  pm.collectionVariables.set('personaId', json.persona.idUuid);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"persona\": {\n    \"dni\": \"1104567890\",\n    \"firstName\": \"Carlos\",\n    \"middleName\": \"Andres\",\n    \"lastName\": \"Mora\",\n    \"email\": \"carlos.mora@example.com\",\n    \"phone\": \"+593912345678\",\n    \"address\": \"Calle Principal 100\",\n    \"nationality\": \"Ecuatoriana\"\n  },\n  \"password\": \"Password123\"\n}"
+        },
+        "url": "{{baseUrl}}/api/users"
+      },
+      "response": []
+    },
+    {
+      "name": "03 - Asignar rol a usuario",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/users/{{userId}}/roles/{{roleId}}"
+      },
+      "response": []
+    },
+    {
+      "name": "04 - Listar roles del usuario",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/users/{{userId}}/roles"
+      },
+      "response": []
+    },
+    {
+      "name": "05 - Obtener usuario por ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/users/{{userId}}"
+      },
+      "response": []
+    },
+    {
+      "name": "06 - Obtener rol por ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/roles/{{roleId}}"
+      },
+      "response": []
+    },
+    {
+      "name": "07 - Obtener persona por ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/personas/{{personaId}}"
+      },
+      "response": []
+    },
+    {
+      "name": "08 - Listar usuarios",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/users"
+      },
+      "response": []
+    },
+    {
+      "name": "09 - Listar roles",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/roles"
+      },
+      "response": []
+    },
+    {
+      "name": "10 - Listar personas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/personas"
+      },
+      "response": []
+    },
+    {
+      "name": "11 - Actualizar usuario",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"persona\": {\n    \"dni\": \"1104567890\",\n    \"firstName\": \"Carlos\",\n    \"middleName\": \"Andres\",\n    \"lastName\": \"Mora Ruiz\",\n    \"email\": \"carlos.mora@example.com\",\n    \"phone\": \"+593912345678\",\n    \"address\": \"Calle Principal 200\",\n    \"nationality\": \"Ecuatoriana\"\n  },\n  \"password\": \"Password1234\"\n}"
+        },
+        "url": "{{baseUrl}}/api/users/{{userId}}"
+      },
+      "response": []
+    },
+    {
+      "name": "12 - Actualizar rol",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"ADMIN\",\n  \"description\": \"Administrador con permisos completos\"\n}"
+        },
+        "url": "{{baseUrl}}/api/roles/{{roleId}}"
+      },
+      "response": []
+    },
+    {
+      "name": "13 - Actualizar persona",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dni\": \"1104567890\",\n  \"firstName\": \"Carlos\",\n  \"middleName\": \"Andres\",\n  \"lastName\": \"Mora Ruiz\",\n  \"email\": \"carlos.mora@example.com\",\n  \"phone\": \"+593912345678\",\n  \"address\": \"Calle Principal 300\",\n  \"nationality\": \"Ecuatoriana\"\n}"
+        },
+        "url": "{{baseUrl}}/api/personas/{{personaId}}"
+      },
+      "response": []
+    },
+    {
+      "name": "14 - Desactivar rol de usuario",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/users/{{userId}}/roles/{{roleId}}"
+      },
+      "response": []
+    },
+    {
+      "name": "15 - Eliminar usuario",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/users/{{userId}}"
+      },
+      "response": []
+    },
+    {
+      "name": "16 - Eliminar rol",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/roles/{{roleId}}"
+      },
+      "response": []
+    },
+    {
+      "name": "17 - Eliminar persona",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/personas/{{personaId}}"
+      },
+      "response": []
+    }
+  ]
+}
