@@ -1,27 +1,27 @@
 UPDATE zonas
 SET estado = 1
 WHERE estado IS NULL
-@@
+;
 
 UPDATE zonas
 SET capacidad = 1
 WHERE capacidad IS NULL OR capacidad < 1
-@@
+;
 
 UPDATE zonas
 SET capacidad = 300
 WHERE capacidad > 300
-@@
+;
 
 UPDATE espacios
 SET capacidad = 1
 WHERE capacidad IS NULL OR capacidad < 1
-@@
+;
 
 UPDATE espacios
 SET capacidad = 300
 WHERE capacidad > 300
-@@
+;
 
 UPDATE espacios
 SET activo = false,
@@ -32,31 +32,31 @@ WHERE zona_id IN (
     FROM zonas
     WHERE estado = 0
 )
-@@
+;
 
 UPDATE espacios
 SET estado = 'FUERA_DE_SERVICIO',
     fecha_actualizacion = COALESCE(fecha_actualizacion, CURRENT_TIMESTAMP)
 WHERE activo = false
   AND estado <> 'FUERA_DE_SERVICIO'
-@@
+;
 
 UPDATE espacios
 SET activo = false,
     fecha_actualizacion = COALESCE(fecha_actualizacion, CURRENT_TIMESTAMP)
 WHERE estado = 'FUERA_DE_SERVICIO'
   AND activo = true
-@@
+;
 
 UPDATE zonas
 SET fecha_creacion = COALESCE(fecha_creacion, CURRENT_TIMESTAMP),
     fecha_modificacion = COALESCE(fecha_modificacion, CURRENT_TIMESTAMP)
-@@
+;
 
 UPDATE espacios
 SET fecha_creacion = COALESCE(fecha_creacion, CURRENT_TIMESTAMP),
     fecha_actualizacion = COALESCE(fecha_actualizacion, CURRENT_TIMESTAMP)
-@@
+;
 
 ALTER TABLE zonas
     ALTER COLUMN estado SET DEFAULT 1,
@@ -67,7 +67,7 @@ ALTER TABLE zonas
     ALTER COLUMN fecha_creacion SET NOT NULL,
     ALTER COLUMN fecha_modificacion SET DEFAULT CURRENT_TIMESTAMP,
     ALTER COLUMN fecha_modificacion SET NOT NULL
-@@
+;
 
 ALTER TABLE espacios
     ALTER COLUMN descripcion TYPE varchar(100),
@@ -79,24 +79,24 @@ ALTER TABLE espacios
     ALTER COLUMN fecha_creacion SET NOT NULL,
     ALTER COLUMN fecha_actualizacion SET DEFAULT CURRENT_TIMESTAMP,
     ALTER COLUMN fecha_actualizacion SET NOT NULL
-@@
+;
 
 ALTER TABLE zonas DROP CONSTRAINT IF EXISTS chk_zonas_estado_valido
-@@
+;
 
 ALTER TABLE zonas
     ADD CONSTRAINT chk_zonas_estado_valido CHECK (estado IN (0, 1))
-@@
+;
 
 ALTER TABLE zonas DROP CONSTRAINT IF EXISTS chk_zonas_capacidad_valida
-@@
+;
 
 ALTER TABLE zonas
     ADD CONSTRAINT chk_zonas_capacidad_valida CHECK (capacidad BETWEEN 1 AND 300)
-@@
+;
 
 ALTER TABLE zonas DROP CONSTRAINT IF EXISTS chk_zonas_textos_validos
-@@
+;
 
 ALTER TABLE zonas
     ADD CONSTRAINT chk_zonas_textos_validos
@@ -105,17 +105,17 @@ ALTER TABLE zonas
         AND length(btrim(nombre)) > 0
         AND (descripcion IS NULL OR length(btrim(descripcion)) > 0)
     )
-@@
+;
 
 ALTER TABLE espacios DROP CONSTRAINT IF EXISTS chk_espacios_capacidad_valida
-@@
+;
 
 ALTER TABLE espacios
     ADD CONSTRAINT chk_espacios_capacidad_valida CHECK (capacidad BETWEEN 1 AND 300)
-@@
+;
 
 ALTER TABLE espacios DROP CONSTRAINT IF EXISTS chk_espacios_textos_validos
-@@
+;
 
 ALTER TABLE espacios
     ADD CONSTRAINT chk_espacios_textos_validos
@@ -123,10 +123,10 @@ ALTER TABLE espacios
         length(btrim(codigo)) > 0
         AND (descripcion IS NULL OR length(btrim(descripcion)) > 0)
     )
-@@
+;
 
 ALTER TABLE espacios DROP CONSTRAINT IF EXISTS chk_espacios_activo_estado
-@@
+;
 
 ALTER TABLE espacios
     ADD CONSTRAINT chk_espacios_activo_estado
@@ -134,21 +134,21 @@ ALTER TABLE espacios
         (activo = true AND estado <> 'FUERA_DE_SERVICIO')
         OR (activo = false AND estado = 'FUERA_DE_SERVICIO')
     )
-@@
+;
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_zonas_nombre_activo
     ON zonas (lower(nombre))
     WHERE estado = 1
-@@
+;
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_zonas_codigo_activo
     ON zonas (codigo)
     WHERE estado = 1
-@@
+;
 
 CREATE INDEX IF NOT EXISTS idx_espacios_zona_id
     ON espacios (zona_id)
-@@
+;
 
 CREATE OR REPLACE FUNCTION validar_cambio_estado_zona()
 RETURNS trigger
@@ -163,7 +163,7 @@ BEGIN
     RETURN NEW;
 END;
 $$
-@@
+;
 
 CREATE OR REPLACE FUNCTION desactivar_espacios_de_zona()
 RETURNS trigger
@@ -182,7 +182,7 @@ BEGIN
     RETURN NEW;
 END;
 $$
-@@
+;
 
 CREATE OR REPLACE FUNCTION validar_espacio_con_zona_activa()
 RETURNS trigger
@@ -232,7 +232,7 @@ BEGIN
     RETURN NEW;
 END;
 $$
-@@
+;
 
 CREATE OR REPLACE FUNCTION prevenir_delete_zona()
 RETURNS trigger
@@ -243,7 +243,7 @@ BEGIN
         USING ERRCODE = '2F000';
 END;
 $$
-@@
+;
 
 CREATE OR REPLACE PROCEDURE desactivar_zona(IN p_zona_id uuid)
 LANGUAGE plpgsql
@@ -277,40 +277,41 @@ BEGIN
     WHERE id = p_zona_id;
 END;
 $$
-@@
+;
 
 DROP TRIGGER IF EXISTS trg_validar_cambio_estado_zona ON zonas
-@@
+;
 
 CREATE TRIGGER trg_validar_cambio_estado_zona
     BEFORE UPDATE OF estado ON zonas
     FOR EACH ROW
     EXECUTE FUNCTION validar_cambio_estado_zona()
-@@
+;
 
 DROP TRIGGER IF EXISTS trg_desactivar_espacios_de_zona ON zonas
-@@
+;
 
 CREATE TRIGGER trg_desactivar_espacios_de_zona
     AFTER UPDATE OF estado ON zonas
     FOR EACH ROW
     EXECUTE FUNCTION desactivar_espacios_de_zona()
-@@
+;
 
 DROP TRIGGER IF EXISTS trg_validar_espacio_con_zona_activa ON espacios
-@@
+;
 
 CREATE TRIGGER trg_validar_espacio_con_zona_activa
     BEFORE INSERT OR UPDATE OF zona_id, activo, estado, capacidad ON espacios
     FOR EACH ROW
     EXECUTE FUNCTION validar_espacio_con_zona_activa()
-@@
+;
 
 DROP TRIGGER IF EXISTS trg_prevenir_delete_zona ON zonas
-@@
+;
 
 CREATE TRIGGER trg_prevenir_delete_zona
     BEFORE DELETE ON zonas
     FOR EACH ROW
     EXECUTE FUNCTION prevenir_delete_zona()
-@@
+;
+

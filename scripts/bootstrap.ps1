@@ -31,7 +31,7 @@ Get-Content -LiteralPath $envFile | ForEach-Object {
 
 $origins = @($settings['CORS_ORIGINS'] -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $originsJson = ConvertTo-Json -InputObject $origins -Compress
-$publicPem = ((Get-Content -LiteralPath $publicKey) | ForEach-Object { "        $_" }) -join "`n"
+$publicPem = ((Get-Content -LiteralPath $publicKey) | ForEach-Object { $_.TrimEnd("`r") } | ForEach-Object { "          $_" }) -join "`n"
 $rendered = (Get-Content -Raw -LiteralPath $template)
 $rendered = $rendered.Replace('__JWT_ISSUER__', $settings['JWT_ISSUER'])
 $rendered = $rendered.Replace('__CORS_ORIGINS__', $originsJson)

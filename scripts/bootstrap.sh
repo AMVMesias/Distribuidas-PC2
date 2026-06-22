@@ -29,7 +29,10 @@ sed "s|__JWT_ISSUER__|$JWT_ISSUER|g; s|__CORS_ORIGINS__|$CORS_JSON|g" \
   "$ROOT/infrastructure/kong/kong.yml.template" |
 awk -v pubfile="$PUBLIC" '
   /__JWT_PUBLIC_KEY__/ {
-    while ((getline line < pubfile) > 0) print "        " line
+    while ((getline line < pubfile) > 0) {
+      sub(/\r$/, "", line)
+      print "          " line
+    }
     close(pubfile)
     next
   }

@@ -8,7 +8,7 @@ consumers:
         secret: unused-rs256-placeholder
         algorithm: RS256
         rsa_public_key: |
-__JWT_PUBLIC_KEY__
+          __JWT_PUBLIC_KEY__
 
 plugins:
   - name: cors

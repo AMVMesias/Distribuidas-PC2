@@ -8,7 +8,7 @@ CREATE TABLE zonas (
     tipo varchar(32) NOT NULL,
     fecha_creacion timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_modificacion timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-)@@
+);
 
 CREATE TABLE espacios (
     id uuid PRIMARY KEY,
@@ -21,4 +21,5 @@ CREATE TABLE espacios (
     estado varchar(32) NOT NULL,
     fecha_creacion timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-)@@
+);
+

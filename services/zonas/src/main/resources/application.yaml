@@ -10,7 +10,6 @@ spring:
       mode: never
   flyway:
     enabled: ${FLYWAY_ENABLED:true}
-    delimiter: "@@"
   jpa:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:validate}
