@@ -38,6 +38,6 @@ export class AssignmentAuditEvent {
   @Column({ name: 'after_payload', type: 'jsonb', nullable: true })
   afterPayload!: Record<string, unknown> | null;
 
-  @Column({ name: 'request_id', nullable: true })
+  @Column({ name: 'request_id', type: 'varchar', nullable: true })
   requestId!: string | null;
 }
