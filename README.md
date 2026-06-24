@@ -8,7 +8,7 @@
 [Arquitectura](#-arquitectura) ·
 [Inicio rápido](#-inicio-rápido) ·
 [API](#-api-pública) ·
-[Documentación](#-documentación-interactiva) ·
+[Swagger UI](#-documentación-interactiva) ·
 [Operación](#-operación)
 
 </div>
@@ -22,6 +22,7 @@
 - [Arquitectura](#-arquitectura)
 - [Stack tecnológico](#-stack-tecnológico)
 - [Requisitos](#-requisitos)
+- [Archivos de configuración clave](#-archivos-de-configuración-clave)
 - [Inicio rápido](#-inicio-rápido)
 - [Cliente web](#-cliente-web)
 - [API pública](#-api-pública)
@@ -40,11 +41,14 @@
 
 Plataforma distribuida de gestión de parking con cuatro microservicios independientes, protegidos por **Kong Gateway** como único punto de entrada. La autenticación se realiza con **JWT RS256** (access tokens de 15 min) y **refresh tokens opacos rotativos** (7 días). Cada servicio usa su propia base de datos PostgreSQL y se comunica con los demás sólo a través de canales internos autenticados.
 
-| Punto de acceso | URL | Visible desde |
-|---|---|---|
-| API Gateway (Kong) | `http://localhost:8000` | Host / navegador |
-| Cliente web de pruebas | `http://localhost:9000` | Host / navegador |
-| Backends, Postgres, Kong Admin | — | Red interna Docker |
+| Punto de acceso | URL | Visible desde | Notas |
+|---|---|---|---|
+| **Swagger UI centralizado (los 4 servicios)** | **<http://localhost:8000/asignaciones/swagger-ui>** | Host / navegador | **Forma recomendada de explorar y probar la API.** |
+| API Gateway (Kong) | `http://localhost:8000` | Host / navegador | Único punto de entrada de la API. |
+| Cliente web de pruebas | `http://localhost:9000` | Host / navegador | Formularios dinámicos, inspector JWT, historial. |
+| Backends, Postgres, Kong Admin | — | Red interna Docker | No expuestos al host. |
+
+> La plataforma expone **OpenAPI 3** para los cuatro servicios. El servicio `asignaciones` publica un Swagger UI que agrega las cuatro specs en una sola URL. Úsalo como punto de partida; Postman queda relegado a casos puntuales (ver [Documentación interactiva](#-documentación-interactiva)).
 
 ---
 
@@ -72,8 +76,9 @@ Plataforma distribuida de gestión de parking con cuatro microservicios independ
 ```mermaid
 flowchart LR
     subgraph Host["Host (Windows / WSL Ubuntu)"]
+        Swagger["Swagger UI centralizado<br/>/asignaciones/swagger-ui"]
         Browser["Cliente web · :9000"]
-        Curl["curl / Postman / apps"]
+        Curl["curl / apps externas"]
     end
 
     subgraph GW["Docker · red gateway"]
@@ -94,6 +99,7 @@ flowchart LR
         DbA[("PostgreSQL 16 asignaciones-db")]
     end
 
+    Swagger --> Kong
     Browser --> Kong
     Curl --> Kong
     Kong -->|JWT| Usuarios
@@ -164,6 +170,7 @@ sequenceDiagram
 - **Docker Engine** y **Docker Compose Plugin** dentro de Ubuntu (no se necesita Docker Desktop).
 - **OpenSSL** en Ubuntu (lo usa el bootstrap para generar el par RSA).
 - **PowerShell 7** (opcional) para invocar los scripts `.ps1` desde Windows.
+- **Navegador moderno** para usar el cliente web (`http://localhost:9000`) y Swagger UI.
 
 Verifica el entorno antes de empezar:
 
@@ -173,34 +180,105 @@ wsl -d Ubuntu -- bash -lc "docker --version && docker compose version && openssl
 
 ---
 
+## Archivos de configuración clave
+
+Antes de arrancar, conviene conocer estos archivos. **Ninguno se versiona en Git** (excepto la plantilla `.env.example`); los genera el bootstrap.
+
+| Archivo | Generado por | Propósito |
+|---|---|---|
+| `.env` | `bootstrap.ps1` (copia desde `.env.example`) | Variables de entorno: credenciales de Postgres, JWT, admin inicial, CORS. |
+| `.secrets/jwt-private.pem` | `bootstrap.ps1` (con `openssl genpkey`) | Clave privada RSA usada por `usuarios` para firmar los access tokens. |
+| `.secrets/jwt-public.pem` | `bootstrap.ps1` (con `openssl rsa -pubout`) | Clave pública RSA usada por Kong (vía `kong.yml`) y por los 4 backends para validar tokens. |
+| `infrastructure/kong/kong.yml` | `bootstrap.ps1` (a partir de `kong.yml.template`) | Configuración declarativa de Kong: rutas, plugins, CORS, claves, etc. |
+
+> Si clonas en otro equipo, basta con ejecutar `.\scripts\bootstrap.ps1` para regenerar todos. Si quieres empezar desde cero en el equipo actual, usa `.\scripts\bootstrap.ps1 -Force` para regenerar también el par RSA.
+
+---
+
 ## Inicio rápido
 
-Los comandos siguientes están escritos para PowerShell 7 en Windows. Si prefieres trabajar directamente en la shell de Ubuntu, traduce las rutas `/mnt/c/...` por la ruta del repositorio dentro de WSL.
+Esta sección cubre el ciclo completo de un desarrollador: clonar → configurar → arrancar → probar. Los comandos están escritos para PowerShell 7 en Windows. Si trabajas directamente en la shell de Ubuntu, traduce las rutas `/mnt/c/...` por la ruta del repositorio dentro de WSL.
 
-### 1. Bootstrap (una sola vez por clonación)
+> **TL;DR** Si ya tienes WSL Ubuntu con Docker y OpenSSL, basta con `.\scripts\bootstrap.ps1` y luego `docker compose up --build -d` desde WSL. El resto de la sección detalla cada paso.
 
-Genera `.env` desde `.env.example`, el par RSA en `.secrets/` y `infrastructure/kong/kong.yml` a partir de la plantilla.
+### 0. Clonar el repositorio
 
 ```powershell
-cd <ruta-del-repo>
+git clone <url-del-repo>
+cd Distribuidas-PC2
+```
+
+### 1. Configurar el entorno (`.env`)
+
+El repositorio incluye una plantilla `.env.example`. El bootstrap la copiará a `.env` automáticamente si no existe. **Revisa y ajusta las credenciales antes de arrancar:**
+
+```ini
+# PostgreSQL (usado por los 4 servicios)
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+USUARIOS_DB=usuarios
+ZONAS_DB=zonas
+VEHICULOS_DB=gestion_vehiculos
+ASIGNACIONES_DB=asignaciones
+
+# JWT
+JWT_ISSUER=gateway-distribuidas
+JWT_AUDIENCE=parking-api
+JWT_ACCESS_MINUTES=15
+JWT_REFRESH_DAYS=7
+
+# Token interno para llamadas service-to-service dentro de Docker
+INTERNAL_SERVICE_TOKEN=change-me-internal-token
+
+# Administrador inicial (se crea en el primer arranque del servicio `usuarios`)
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=Admin12345!
+ADMIN_DNI=0000000000
+ADMIN_FIRST_NAME=Administrador
+ADMIN_LAST_NAME=Sistema
+ADMIN_EMAIL=admin@example.com
+
+# Orígenes CORS permitidos (separados por coma). Incluye el cliente web y los Swagger UI.
+CORS_ORIGINS=http://localhost:4200,http://localhost:5173,http://localhost:9000
+```
+
+> ⚠️ Cambia `POSTGRES_PASSWORD`, `ADMIN_PASSWORD` e `INTERNAL_SERVICE_TOKEN` si vas a exponer la plataforma fuera de `localhost`.
+
+### 2. Ejecutar el bootstrap
+
+```powershell
 .\scripts\bootstrap.ps1
 ```
 
-> El script es idempotente. Usa `.\scripts\bootstrap.ps1 -Force` para regenerar el par RSA y la configuración de Kong.
+El script:
 
-### 2. Levantar la plataforma
+1. Copia `.env.example` a `.env` si no existe.
+2. Genera el par RSA (`jwt-private.pem` / `jwt-public.pem`) en `.secrets/`.
+3. Renderiza `infrastructure/kong/kong.yml` a partir de la plantilla con la clave pública, el emisor y los orígenes CORS.
+
+> Es idempotente. Usa `.\scripts\bootstrap.ps1 -Force` para regenerar el par RSA y la configuración de Kong (por ejemplo, tras cambiar `CORS_ORIGINS`).
+
+Si prefieres hacerlo en WSL directamente:
+
+```bash
+wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && bash scripts/bootstrap.sh"
+```
+
+### 3. Levantar la plataforma
 
 ```powershell
 wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && docker compose up --build -d"
 ```
 
-Espera a que todos los healthchecks pasen:
+Espera a que **todos los healthchecks** pasen:
 
 ```powershell
 wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && docker compose ps"
 ```
 
-### 3. Probar la API
+El estado correcto es `running (healthy)` para `usuarios`, `zonas`, `vehiculos`, `asignaciones`, `kong` y `web`. Si algún servicio queda en `(health: starting)` o `(unhealthy)`, revisa los logs de ese servicio.
+
+### 4. Probar la API
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/login \
@@ -215,21 +293,24 @@ curl http://localhost:8000/api/v1/auth/me \
   -H "Authorization: Bearer <accessToken>"
 ```
 
-### 4. Abrir el cliente web
+### 5. Abrir Swagger UI y el cliente web
 
-Visita **`http://localhost:9000`**. Encontrarás:
+| Herramienta | URL |
+|---|---|
+| **Swagger UI centralizado** (los 4 servicios) | **<http://localhost:8000/asignaciones/swagger-ui>** |
+| Cliente web de pruebas | <http://localhost:9000> |
 
-- Un *dashboard* con la URL de Kong configurable y el estado de la sesión.
-- Formularios dinámicos para **todos los endpoints** de los cuatro servicios.
-- Un **inspector de JWT** que decodifica el access token actual.
-- Acceso directo al **Swagger UI** de cada servicio a través de Kong.
-- **Historial de peticiones** de la sesión.
+En el **Swagger UI centralizado** selecciona la spec del servicio en el desplegable superior derecho. Pulsa **Authorize** y pega el `accessToken` del paso 4 para probar las rutas protegidas.
 
-### 5. Logs en vivo
+El **cliente web** ofrece formularios para todos los endpoints, inspector de JWT, historial y acceso directo a los Swagger UI de cada servicio.
+
+### 6. Logs en vivo
 
 ```powershell
 wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && docker compose logs -f --tail=100"
 ```
+
+Para seguir un servicio concreto: `docker compose logs -f <servicio>` (por ejemplo `kong`, `usuarios`, `vehiculos`).
 
 ---
 
@@ -337,15 +418,46 @@ curl http://localhost:8000/api/v1/zonas \
 
 ## Documentación interactiva
 
-Cada servicio publica su Swagger UI y OpenAPI JSON. Kong los enruta bajo el prefijo del servicio con `strip_path`, así que **no requieren JWT**.
+La forma recomendada de explorar y probar la API es el **Swagger UI**. Kong expone los `swagger-ui` y los JSON OpenAPI de cada servicio bajo su prefijo, sin requerir JWT.
+
+### Swagger UI centralizado (los 4 servicios en una sola URL)
+
+El servicio de **asignaciones** publica un Swagger UI que agrega las cuatro especificaciones OpenAPI. Es la **puerta de entrada recomendada** para probar la plataforma.
+
+| Recurso | URL |
+|---|---|
+| **Swagger UI centralizado** | **<http://localhost:8000/asignaciones/swagger-ui>** |
+| OpenAPI asignaciones | <http://localhost:8000/asignaciones/v3/api-docs> |
+
+> En la esquina superior derecha del Swagger UI centralizado verás un desplegable con las cuatro specs: **Asignaciones · Usuarios · Vehículos · Zonas**. Selecciona cualquiera y prueba sus endpoints.
+
+### Swagger UI por servicio
+
+Si prefieres abrir la documentación de un servicio concreto, también están disponibles:
 
 | Servicio | Swagger UI | OpenAPI JSON |
 |---|---|---|
-| usuarios | <http://localhost:8000/usuarios/swagger-ui/index.html> | <http://localhost:8000/usuarios/v3/api-docs> |
-| zonas | <http://localhost:8000/zonas/swagger-ui/index.html> | <http://localhost:8000/zonas/v3/api-docs> |
-| vehiculos | <http://localhost:8000/vehiculos/swagger-ui> | <http://localhost:8000/vehiculos/v3/api-docs> |
+| usuarios (Spring Boot) | <http://localhost:8000/usuarios/swagger-ui/index.html> | <http://localhost:8000/usuarios/v3/api-docs> |
+| zonas (Spring Boot) | <http://localhost:8000/zonas/swagger-ui/index.html> | <http://localhost:8000/zonas/v3/api-docs> |
+| vehiculos (NestJS) | <http://localhost:8000/vehiculos/swagger-ui> | <http://localhost:8000/vehiculos/v3/api-docs> |
+| asignaciones (NestJS) | <http://localhost:8000/asignaciones/swagger-ui> | <http://localhost:8000/asignaciones/v3/api-docs> |
 
-> `asignaciones` no expone Swagger UI al exterior, pero puedes consumirlo desde el cliente web en la sección **Asignaciones** o vía Kong con el JWT.
+### Cómo autenticarse desde Swagger UI
+
+1. Abre el Swagger UI (recomendado: la URL centralizada).
+2. Pulsa **Authorize** (arriba a la derecha). Aparece un diálogo con el campo `bearerAuth` (Authorization: Bearer …).
+3. Pega un `accessToken` válido (obtenido vía `POST /api/v1/auth/login`).
+4. Pulsa **Authorize** y luego **Close**. Ya puedes usar "Try it out" en cualquier endpoint protegido.
+
+> Las rutas de documentación **no requieren JWT** para abrir la UI, pero los endpoints que vayas a probar sí. Si el token expira (15 min), repite el login desde el cliente web o por `curl` y vuelve a pulsar **Authorize**.
+
+### Postman (alternativa)
+
+Si necesitas compartir peticiones o usar *environments* por desarrollador, importa la colección:
+
+- [`docs/gateway.postman_collection.json`](./docs/gateway.postman_collection.json)
+
+Las variables `baseUrl`, `accessToken` y `refreshToken` se actualizan automáticamente al ejecutar `login` y `refresh`. **Úsala solo si Swagger UI no cubre tu caso de uso**; para el día a día, Swagger UI es la opción primaria.
 
 ---
 
@@ -509,9 +621,9 @@ cd ..\asignaciones; npm run build
 wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && docker compose config --quiet && docker compose ps -a"
 ```
 
-### Colección Postman
+### Colección Postman (opcional)
 
-Importa [`docs/gateway.postman_collection.json`](./docs/gateway.postman_collection.json) en Postman. Las variables `baseUrl`, `accessToken` y `refreshToken` se actualizan automáticamente al ejecutar `login` y `refresh`.
+Si prefieres Postman sobre Swagger UI (por ejemplo para *environments* por desarrollador), importa [`docs/gateway.postman_collection.json`](./docs/gateway.postman_collection.json). Las variables `baseUrl`, `accessToken` y `refreshToken` se actualizan automáticamente al ejecutar `login` y `refresh`. Para el día a día, **Swagger UI es la opción recomendada** (ver [Documentación interactiva](#-documentación-interactiva)).
 
 ---
 
@@ -572,10 +684,12 @@ docker exec kong wget -qO- http://usuarios:8080/actuator/health
 | Síntoma | Causa probable | Solución |
 |---|---|---|
 | `Connection refused` a `localhost:8000` | Kong no está arriba o `docker compose` falló. | `docker compose ps` y `docker compose logs kong`. |
+| Swagger UI no carga o muestra JSON crudo | El servicio no ha terminado de arrancar o su OpenAPI no se generó. | Espera a que `docker compose ps` muestre `healthy`. Comprueba `GET http://localhost:8000/<servicio>/v3/api-docs` directamente. |
 | `401` desde Kong | Token ausente, expirado o con issuer/audience incorrectos. | Inspecciona el JWT en el cliente web y verifica `JWT_ISSUER` / `JWT_AUDIENCE` del `.env`. |
 | `403` desde un backend | El token pasó Kong pero el rol no permite la operación. | Revisa la tabla de permisos. Inicia sesión como `ADMIN` si la ruta lo requiere. |
 | `429` | Rate limit de Kong activo. | Espera el tiempo indicado y reintenta. Los límites están en `infrastructure/kong/kong.yml`. |
 | Cambié `CORS_ORIGINS` y no aplica | Kong no se ha regenerado. | Ejecuta `.\scripts\bootstrap.ps1` de nuevo y recrea Kong: `docker compose up -d --force-recreate kong`. |
+| Cambié claves en `.env` (JWT, admin, Postgres) y no aplica | Los contenedores se levantaron con los valores anteriores. | Re-ejecuta `.\scripts\bootstrap.ps1` (si tocas `JWT_ISSUER`/`CORS_ORIGINS`) y recrea los servicios afectados: `docker compose up -d --force-recreate kong usuarios`. |
 | Postgres de `usuarios` no arranca | El volumen se montó sobre `/var/lib/postgresql` en vez de `/var/lib/postgresql/data` (es lo correcto para Postgres 18). | Compose ya apunta a la ruta correcta. Si lo modificas a mano, asegúrate de respetar la convención de la imagen. |
 | Quiero empezar desde cero | Volúmenes con datos viejos. | `docker compose down -v && docker compose up --build -d`. **Esto elimina sólo los volúmenes de este monorepo**. |
 | `docker compose` no se reconoce | Falta el plugin de Docker Compose. | Instálalo dentro de Ubuntu (`sudo apt install docker-compose-plugin`). |
