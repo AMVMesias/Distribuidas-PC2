@@ -11,6 +11,7 @@ async function bootstrap() {
     .setTitle('Servicio de Asignación y Trazabilidad')
     .setDescription('Asignación de vehículos a propietarios y trazabilidad histórica. Acceso por Kong.')
     .setVersion('v1')
+    .addServer('http://localhost:8000', 'Kong Gateway local')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', name: 'Authorization', in: 'header' },
       'bearerAuth',

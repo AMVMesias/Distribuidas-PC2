@@ -3,6 +3,7 @@ package ec.edu.espe.usuarios.controller;
 import ec.edu.espe.usuarios.dto.InternalUserResponse;
 import ec.edu.espe.usuarios.dto.UserResponse;
 import ec.edu.espe.usuarios.service.UserService;
+import io.swagger.v3.oas.annotations.Hidden;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
@@ -17,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/internal/usuarios")
 @Profile("!test")
+@Hidden
 public class InternalUserController {
 	private final UserService userService;
 	private final String internalToken;

@@ -1,8 +1,9 @@
 import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InternalTokenGuard } from '../auth/internal-token.guard';
 import { VehiculosService } from './vehiculos.service';
 
+@ApiExcludeController()
 @ApiTags('internal-vehiculos')
 @Controller('api/v1/internal/vehiculos')
 @UseGuards(InternalTokenGuard)

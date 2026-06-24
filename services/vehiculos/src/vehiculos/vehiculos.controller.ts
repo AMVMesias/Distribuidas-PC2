@@ -16,7 +16,11 @@ export class VehiculosController {
   constructor(private readonly vehiculosService: VehiculosService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Crear vehículo', description: 'El ownerId se toma del claim sub del JWT, no del body.' })
+  @ApiOperation({
+    summary: 'Crear vehículo',
+    description:
+      'El ownerId se toma del claim sub del JWT y se conserva por compatibilidad. La propiedad oficial para la evaluación se administra en /api/v1/asignaciones.',
+  })
   @ApiResponse({ status: 201, description: 'Vehículo creado', type: RespuestaVehiculoDto })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
@@ -25,7 +29,11 @@ export class VehiculosController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar vehículos', description: 'USER ve los propios; ADMIN ve todos.' })
+  @ApiOperation({
+    summary: 'Listar vehículos',
+    description:
+      'USER ve los vehículos asociados a su ownerId legado; ADMIN ve todos. Para flota oficial por propietario usa /api/v1/propietarios/{userId}/vehiculos en asignaciones.',
+  })
   @ApiResponse({ status: 200, description: 'Listado de vehículos', type: [RespuestaVehiculoDto] })
   findAll(@Req() req: AuthenticatedRequest) {
     return this.vehiculosService.findAll(req.user);

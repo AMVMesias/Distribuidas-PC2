@@ -9,8 +9,9 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Servicio de Vehículos')
-    .setDescription('Gestión de vehículos. Acceso a través de Kong en http://localhost:8000.')
+    .setDescription('Gestión de vehículos. Acceso a través de Kong en http://localhost:8000. La propiedad oficial vehículo-propietario se administra en el servicio de asignaciones; ownerId queda como compatibilidad legado.')
     .setVersion('v1')
+    .addServer('http://localhost:8000', 'Kong Gateway local')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', name: 'Authorization', in: 'header' },
       'bearerAuth',
