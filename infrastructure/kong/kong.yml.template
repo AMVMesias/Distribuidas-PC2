@@ -111,3 +111,22 @@ services:
       - name: vehiculos-docs
         paths: ["/vehiculos"]
         strip_path: true
+
+  - name: asignaciones
+    url: http://asignaciones:3000
+    connect_timeout: 5000
+    read_timeout: 30000
+    write_timeout: 30000
+    retries: 2
+    routes:
+      - name: asignaciones-api
+        paths: ["~/api/v1/(asignaciones|propietarios)"]
+        strip_path: false
+        plugins:
+          - name: jwt
+            config: { claims_to_verify: [exp] }
+          - name: rate-limiting
+            config: { minute: 100, limit_by: consumer, policy: local }
+      - name: asignaciones-docs
+        paths: ["/asignaciones"]
+        strip_path: true
