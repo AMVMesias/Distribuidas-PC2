@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AutoDto, CamionetaDto, MotocicletaDto } from './vehiculos/dto/create-vehiculo.dto';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,7 +19,9 @@ async function bootstrap() {
     )
     .addTag('vehiculos')
     .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config, {
+    extraModels: [AutoDto, MotocicletaDto, CamionetaDto],
+  });
   SwaggerModule.setup('swagger-ui', app, document, {
     jsonDocumentUrl: 'v3/api-docs',
   });

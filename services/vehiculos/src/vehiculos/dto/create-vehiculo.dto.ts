@@ -4,7 +4,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import { Clasificacion } from "../entities/vehiculo.entity";
 import { TipoMoto } from "../entities/motocicleta.entity";
 
-class BaseVehiculoDto {
+export class BaseVehiculoDto {
 
     @ApiProperty({ example: 'ABC-1234', description: 'Placa con formato ABC-1234' })
     @IsString()
@@ -48,7 +48,7 @@ class BaseVehiculoDto {
     clasificacion!: Clasificacion;
 }
 
-class AutoDto extends BaseVehiculoDto {
+export class AutoDto extends BaseVehiculoDto {
     @ApiProperty({ example: 4, minimum: 2, maximum: 4 })
     @IsNotEmpty({ message: "El número de puertas es obligatorio" })
     @IsInt({ message: "El número de puertas debe ser un número entero" })
@@ -67,13 +67,13 @@ class AutoDto extends BaseVehiculoDto {
 }
 
 
-class MotocicletaDto extends BaseVehiculoDto {
+export class MotocicletaDto extends BaseVehiculoDto {
     @ApiProperty({ enum: TipoMoto, enumName: 'TipoMoto' })
     @IsEnum(TipoMoto, { message: 'El tipo de moto debe ser Deportiva, Scooter o Motocross' })
     tipoMoto!: TipoMoto;
 }
 
-class CamionetaDto extends BaseVehiculoDto {
+export class CamionetaDto extends BaseVehiculoDto {
     @ApiProperty({ example: 800, minimum: 0, maximum: 20000, description: 'Capacidad de carga en kg' })
     @IsNotEmpty({ message: "La capacidad de carga es obligatoria" })
     @IsNumber({}, { message: "La capacidad de carga debe ser un número" })
