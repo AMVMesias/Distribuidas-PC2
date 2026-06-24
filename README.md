@@ -76,7 +76,7 @@ Plataforma distribuida de gestión de parking con cuatro microservicios independ
 ```mermaid
 flowchart LR
     subgraph Host["Host (Windows / WSL Ubuntu)"]
-        Swagger["Swagger UI centralizado<br/>/asignaciones/swagger-ui"]
+        Swagger["Swagger UI centralizado · :8000/asignaciones/swagger-ui"]
         Browser["Cliente web · :9000"]
         Curl["curl / apps externas"]
     end
