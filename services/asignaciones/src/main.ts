@@ -20,6 +20,7 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger-ui', app, document, {
+    explorer: true,
     jsonDocumentUrl: 'v3/api-docs',
     customSiteTitle: 'Gateway Distribuidas API Docs',
     swaggerOptions: {
