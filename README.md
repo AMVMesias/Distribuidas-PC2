@@ -72,26 +72,26 @@ Plataforma distribuida de gestión de parking con cuatro microservicios independ
 ```mermaid
 flowchart LR
     subgraph Host["Host (Windows / WSL Ubuntu)"]
-        Browser["Cliente web<br/>localhost:9000"]
+        Browser["Cliente web · :9000"]
         Curl["curl / Postman / apps"]
     end
 
-    subgraph Docker["Docker · red gateway"]
-        Kong["Kong Gateway<br/>:8000"]
+    subgraph GW["Docker · red gateway"]
+        Kong["Kong Gateway · :8000"]
     end
 
-    subgraph Backends["Docker · red gateway + redes internas"]
-        Usuarios["usuarios<br/>Spring Boot :8080"]
-        Zonas["zonas<br/>Spring Boot :8080"]
-        Vehiculos["vehiculos<br/>NestJS :3000"]
-        Asignaciones["asignaciones<br/>NestJS :3000"]
+    subgraph BE["Docker · red gateway + redes internas"]
+        Usuarios["usuarios · Spring Boot :8080"]
+        Zonas["zonas · Spring Boot :8080"]
+        Vehiculos["vehiculos · NestJS :3000"]
+        Asignaciones["asignaciones · NestJS :3000"]
     end
 
-    subgraph Datos["Docker · redes internas (sin acceso externo)"]
-        DbU[("PostgreSQL 18<br/>usuarios-db")]
-        DbZ[("PostgreSQL 16<br/>zonas-db")]
-        DbV[("PostgreSQL 16<br/>vehiculos-db")]
-        DbA[("PostgreSQL 16<br/>asignaciones-db")]
+    subgraph DB["Docker · redes internas sin acceso externo"]
+        DbU[("PostgreSQL 18 usuarios-db")]
+        DbZ[("PostgreSQL 16 zonas-db")]
+        DbV[("PostgreSQL 16 vehiculos-db")]
+        DbA[("PostgreSQL 16 asignaciones-db")]
     end
 
     Browser --> Kong
@@ -100,8 +100,8 @@ flowchart LR
     Kong -->|JWT| Zonas
     Kong -->|JWT| Vehiculos
     Kong -->|JWT| Asignaciones
-    Usuarios -.->|"X-Internal-Service-Token"| Asignaciones
-    Vehiculos -.->|"X-Internal-Service-Token"| Asignaciones
+    Usuarios -.->|X-Internal-Service-Token| Asignaciones
+    Vehiculos -.->|X-Internal-Service-Token| Asignaciones
     Usuarios --> DbU
     Zonas --> DbZ
     Vehiculos --> DbV
@@ -118,17 +118,17 @@ sequenceDiagram
     participant U as usuarios
     participant DB as Postgres
 
-    C->>K: POST /api/v1/auth/login {username, password}
+    C->>K: POST /api/v1/auth/login
     K->>U: reenvía petición
     U->>DB: SELECT user, password_hash
-    U-->>K: 200 {accessToken (JWT RS256 15m), refreshToken (opaco 7d)}
-    K-->>C: 200 + pareja de tokens
+    U-->>K: 200 accessToken + refreshToken
+    K-->>C: 200 pareja de tokens
 
-    C->>K: GET /api/v1/zonas<br/>Authorization: Bearer ...
-    K->>K: valida firma, iss, exp con clave pública
-    K->>U/Z/V/A: reenvía con headers X-Consumer-* + JWT
-    U/Z/V/A->>U/Z/V/A: re-valida token y aplica RBAC
-    U/Z/V/A-->>K: respuesta
+    C->>K: GET /api/v1/zonas (Bearer)
+    K->>K: valida firma, iss, exp
+    K->>U: reenvía con headers de Kong
+    U->>U: re-valida token y aplica RBAC
+    U-->>K: respuesta
     K-->>C: respuesta
 ```
 
@@ -355,41 +355,28 @@ Cada servicio publica su Swagger UI y OpenAPI JSON. Kong los enruta bajo el pref
 
 ```mermaid
 erDiagram
-    PERSONAS ||--o| USERS : "1:1"
-    USERS ||--o{ USER_ROLE : "M:N"
-    ROLES ||--o{ USER_ROLE : "M:N"
-
+    PERSONAS ||--o| USERS : tiene
+    USERS ||--o{ USER_ROLE : asignado
+    ROLES ||--o{ USER_ROLE : contiene
     PERSONAS {
-        uuid id_uuid PK
+        uuid id PK
         string dni
         string first_name
-        string middle_name
         string last_name
         string email
-        string phone
-        string address
-        string nationality
-        boolean active
     }
-
     USERS {
-        uuid id_person FK
+        uuid persona_id FK
         string username
         string password_hash
-        boolean active
-        timestamp last_login
     }
-
     ROLES {
         uuid id PK
         string name
-        string description
-        boolean active
     }
-
     USER_ROLE {
-        uuid id_user FK
-        uuid id_role FK
+        uuid user_id FK
+        uuid role_id FK
     }
 ```
 
@@ -428,22 +415,16 @@ classDiagram
 
 ```mermaid
 erDiagram
-    ZONAS ||--o{ ESPACIOS : "1:N"
+    ZONAS ||--o{ ESPACIOS : contiene
     ZONAS {
         uuid id PK
         string nombre
-        string descripcion
         string tipo
-        int capacidad
-        boolean activo
     }
     ESPACIOS {
         uuid id PK
-        uuid id_zona FK
+        uuid zona_id FK
         string codigo
-        string descripcion
-        string tipo
-        int capacidad
         string estado
     }
 ```
@@ -452,23 +433,18 @@ erDiagram
 
 ```mermaid
 erDiagram
-    VEHICLE_ASSIGNMENT ||--o{ ASSIGNMENT_AUDIT_EVENT : "genera"
+    VEHICLE_ASSIGNMENT ||--o{ ASSIGNMENT_AUDIT_EVENT : genera
     VEHICLE_ASSIGNMENT {
         uuid id PK
         uuid user_id
         uuid vehicle_id
         boolean active
-        timestamp created_at
-        timestamp updated_at
     }
     ASSIGNMENT_AUDIT_EVENT {
         uuid id PK
         uuid assignment_id FK
         string event_type
         uuid actor_user_id
-        jsonb previous_payload
-        jsonb new_payload
-        timestamp occurred_at
     }
 ```
 
@@ -482,16 +458,16 @@ erDiagram
 
 ```mermaid
 flowchart TB
-    A["Petición del cliente"] --> B{"¿CORS<br/>permitido?"}
+    A["Petición del cliente"] --> B{"¿CORS permitido?"}
     B -- no --> X1[403]
-    B -- sí --> C{"¿Rate limit<br/>OK?"}
+    B -- si --> C{"¿Rate limit OK?"}
     C -- no --> X2[429]
-    C -- sí --> D{"¿Requiere JWT?"}
+    C -- si --> D{"¿Requiere JWT?"}
     D -- no --> E["Proxy al backend"]
-    D -- sí --> F{"¿Firma / iss / exp<br/>válidos?"}
+    D -- si --> F{"¿Firma / iss / exp válidos?"}
     F -- no --> X3[401]
-    F -- sí --> G["Proxy al backend"]
-    E --> H["Backend aplica<br/>RBAC de negocio"]
+    F -- si --> G["Proxy al backend"]
+    E --> H["Backend aplica RBAC de negocio"]
     G --> H
     H --> I["200 / 4xx / 5xx"]
 ```
