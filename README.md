@@ -1,6 +1,6 @@
 # Gateway Distribuidas
 
-Monorepo de tres microservicios protegidos por **Kong Gateway**. La API se expone únicamente mediante Kong (`http://localhost:8000`) y el cliente web está en `http://localhost:9000`; los backends, PostgreSQL y la API administrativa de Kong permanecen en redes privadas de Docker.
+Monorepo de microservicios protegidos por **Kong Gateway**. La API se expone únicamente mediante Kong (`http://localhost:8000`) y el cliente web está en `http://localhost:9000`; los backends, PostgreSQL y la API administrativa de Kong permanecen en redes privadas de Docker.
 
 ## Arquitectura
 
@@ -8,10 +8,11 @@ Monorepo de tres microservicios protegidos por **Kong Gateway**. La API se expon
 Cliente -> Kong :8000 -> usuarios (Spring Boot) -> PostgreSQL
                        -> zonas (Spring Boot)    -> PostgreSQL
                        -> vehiculos (NestJS)     -> PostgreSQL
+                       -> asignaciones (NestJS)  -> PostgreSQL
 ```
 
 ```text
-services/                 Código de los tres servicios
+services/                 Código de los servicios
 infrastructure/kong/      Configuración declarativa DB-less
 scripts/                  Bootstrap para PowerShell y Bash
 docs/                     Modelo, ejemplos y colecciones Postman
@@ -59,6 +60,12 @@ wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/mesia/Desktop/Universidad/Distribuida
 | `GET /api/v1/zonas`, `/espacios` | `USER` o `ADMIN` |
 | Escrituras en `/api/v1/zonas`, `/espacios` | Sólo `ADMIN` |
 | `/api/v1/vehiculos` | `USER` sobre los propios; `ADMIN` sobre todos |
+| `POST /api/v1/asignaciones` | `USER` se asigna vehículos a sí mismo; `ADMIN` asigna a cualquiera |
+| `GET /api/v1/asignaciones` | `USER` ve sus asignaciones; `ADMIN` ve todas |
+| `DELETE /api/v1/asignaciones/{userId}/{vehicleId}` | Soft delete; `USER` sólo sobre sí mismo, `ADMIN` sobre todos |
+| `PUT /api/v1/asignaciones/vehiculos/{vehicleId}/propietario` | Sólo `ADMIN`; transfiere propietario activo |
+| `GET /api/v1/propietarios/{userId}/vehiculos` | Flota agregada; `USER` sólo propia, `ADMIN` cualquiera |
+| `GET /api/v1/asignaciones/auditoria` | Sólo `ADMIN` |
 
 Ejemplo de inicio de sesión:
 
@@ -75,6 +82,9 @@ Para rutas protegidas envía `Authorization: Bearer <accessToken>`. Kong valida 
 - Kong aplica CORS, `X-Request-ID` y límites diferenciados para login, registro, refresh y rutas autenticadas.
 - El registro público siempre asigna `USER`.
 - Vehículos toma `ownerId` exclusivamente del claim `sub`.
+- Asignaciones es la fuente oficial de propiedad vehículo-propietario mediante clave compuesta `user_id + vehicle_id`; el `ownerId` de vehículos queda como compatibilidad.
+- Cada creación, reactivación, transferencia o eliminación lógica de asignación registra un evento de auditoría con payload anterior y nuevo.
+- Los servicios usan `X-Internal-Service-Token` sólo por red interna de Docker para consultar usuarios y vehículos; esos endpoints no se publican en Kong.
 - Reutilizar un refresh token rotado revoca toda su familia.
 - Hibernate valida el esquema y Flyway ejecuta las migraciones desde bases vacías.
 - Sólo el puerto `8000` está publicado.
@@ -85,6 +95,7 @@ Para rutas protegidas envía `Authorization: Bearer <accessToken>`. Kong valida 
 cd services\usuarios; .\mvnw.cmd test
 cd ..\zonas; .\mvnw.cmd test
 cd ..\vehiculos; npm test -- --runInBand; npm run build
+cd ..\asignaciones; npm run build
 ```
 
 Validación de Compose y estado en WSL:
