@@ -21,6 +21,16 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger-ui', app, document, {
     jsonDocumentUrl: 'v3/api-docs',
+    customSiteTitle: 'Gateway Distribuidas API Docs',
+    swaggerOptions: {
+      urls: [
+        { name: 'Asignaciones', url: '/asignaciones/v3/api-docs' },
+        { name: 'Usuarios', url: '/usuarios/v3/api-docs' },
+        { name: 'Vehículos', url: '/vehiculos/v3/api-docs' },
+        { name: 'Zonas', url: '/zonas/v3/api-docs' },
+      ],
+      urlsPrimaryName: 'Asignaciones',
+    },
   });
 
   await app.listen(process.env.PORT ?? 3000);
