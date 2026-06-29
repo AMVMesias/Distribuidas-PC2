@@ -308,10 +308,10 @@ export class AsignacionesService {
   }
 
   private isAdmin(user: AuthUser): boolean {
-    return user.roles.includes('ADMIN');
+    return user.roles.some(r => ['ADMIN', 'ROOT'].includes(r));
   }
 
   private requireAdmin(user: AuthUser) {
-    if (!this.isAdmin(user)) throw new ForbiddenException('Se requiere rol ADMIN');
+    if (!this.isAdmin(user)) throw new ForbiddenException('Se requiere rol ADMIN o ROOT');
   }
 }

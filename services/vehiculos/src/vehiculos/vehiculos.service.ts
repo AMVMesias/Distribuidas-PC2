@@ -23,13 +23,13 @@ export class VehiculosService {
   }
 
   findAll(user: AuthUser): Promise<Vehiculo[]> {
-    return user.roles.includes('ADMIN')
+    return this.isPrivileged(user)
       ? this.repository.find()
       : this.repository.find({ where: { ownerId: user.userId } });
   }
 
   async findOne(id: string, user: AuthUser) {
-    const where = user.roles.includes('ADMIN') ? { id } : { id, ownerId: user.userId };
+    const where = this.isPrivileged(user) ? { id } : { id, ownerId: user.userId };
     const vehiculo = await this.repository.findOne({ where });
     if (!vehiculo) throw new NotFoundException(`No se encontró un vehículo con el ID ${id}`);
     return vehiculo;
@@ -60,6 +60,10 @@ export class VehiculosService {
       clasificacion: vehiculo.clasificacion,
       tipo: this.tipoPublico(vehiculo),
     };
+  }
+
+  private isPrivileged(user: AuthUser): boolean {
+    return user.roles.some(r => ['ADMIN', 'ROOT'].includes(r));
   }
 
   private tipoPublico(vehiculo: Vehiculo): string {

@@ -8,8 +8,11 @@ import ec.edu.espe.usuarios.service.UserService;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +30,18 @@ public class UserController {
 
 	public UserController(UserService userService) {
 		this.userService = userService;
+	}
+
+	@PutMapping("/me")
+	public ResponseEntity<Map<String, String>> changeMyPassword(@AuthenticationPrincipal Jwt jwt,
+			@RequestBody Map<String, String> body) {
+		UUID id = UUID.fromString(jwt.getSubject());
+		String newPassword = body.get("password");
+		if (newPassword == null || newPassword.isBlank()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "El campo password es obligatorio"));
+		}
+		userService.changePassword(id, newPassword);
+		return ResponseEntity.ok(Map.of("message", "Contraseña actualizada exitosamente"));
 	}
 
 	@GetMapping

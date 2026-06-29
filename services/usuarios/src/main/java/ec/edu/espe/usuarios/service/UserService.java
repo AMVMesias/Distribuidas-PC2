@@ -110,6 +110,12 @@ public class UserService {
 	}
 
 	@Transactional
+	public void changePassword(UUID id, String newPassword) {
+		User user = findUser(id);
+		user.setPasswordHash(passwordEncoder.encode(newPassword));
+	}
+
+	@Transactional
 	public UserRoleResponse assignRole(UUID userId, UUID roleId) {
 		User user = findUser(userId);
 		Role role = roleRepository.findById(roleId)

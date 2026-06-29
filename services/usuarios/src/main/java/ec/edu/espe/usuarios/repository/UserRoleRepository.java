@@ -16,4 +16,8 @@ public interface UserRoleRepository extends JpaRepository<UserRole, UserRoleId> 
 	List<UserRole> findByRole_IdAndActiveTrue(UUID idRole);
 
 	Optional<UserRole> findByUser_IdPersonAndRole_Id(UUID idUser, UUID idRole);
+
+	@org.springframework.data.jpa.repository.Modifying
+	@org.springframework.data.jpa.repository.Query("DELETE FROM UserRole ur WHERE ur.role.id = :roleId")
+	void deleteByRoleId(@org.springframework.data.repository.query.Param("roleId") UUID roleId);
 }

@@ -46,7 +46,9 @@ public class BootstrapData implements CommandLineRunner {
 	@Transactional
 	public void run(String... args) {
 		Role admin = role("ADMIN", "Administración completa");
-		role("USER", "Usuario de la aplicación");
+		role("USER", "Usuario de la aplicación (Client)");
+		role("COLLECTOR", "Recolector de vehículos");
+		role("ROOT", "Superusuario con permisos de borrado físico");
 		if (users.findByUsernameIgnoreCase(username).isPresent()) return;
 
 		Persona person = new Persona();

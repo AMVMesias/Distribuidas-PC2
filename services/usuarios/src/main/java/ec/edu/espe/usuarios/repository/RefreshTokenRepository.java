@@ -16,4 +16,6 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
 	Optional<RefreshToken> findByHashForUpdate(@Param("hash") String hash);
 
 	List<RefreshToken> findByFamilyIdAndRevokedAtIsNull(UUID familyId);
+
+	void deleteByUser(ec.edu.espe.usuarios.entity.User user);
 }

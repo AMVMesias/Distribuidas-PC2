@@ -33,6 +33,12 @@ public class SecurityConfig {
 								"/api/v1/auth/register", "/api/v1/auth/login",
 								"/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
 						.requestMatchers("/api/v1/auth/me").authenticated()
+						.requestMatchers("/api/v1/root/**").hasRole("ROOT")
+						.requestMatchers("/api/v1/usuarios/me").authenticated()
+						.requestMatchers("/api/v1/personas/me").authenticated()
+						.requestMatchers("/api/v1/usuarios/**").hasAnyRole("ADMIN", "ROOT")
+						.requestMatchers("/api/v1/personas/**").hasAnyRole("ADMIN", "ROOT", "USER")
+						.requestMatchers("/api/v1/roles/**").hasAnyRole("ADMIN", "ROOT")
 						.anyRequest().hasRole("ADMIN"))
 				.oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(authorities())))
 				.build();

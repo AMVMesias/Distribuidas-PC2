@@ -5,6 +5,10 @@
 .secrets/
 infrastructure/kong/kong.yml
 
+# Local development artifacts
+comandos.html
+tutorial.html
+
 # Java / Maven
 **/target/
 **/*.class

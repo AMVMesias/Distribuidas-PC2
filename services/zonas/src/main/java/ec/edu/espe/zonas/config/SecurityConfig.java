@@ -54,8 +54,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/api/v1/root/**").hasRole("ROOT")
                         .requestMatchers(HttpMethod.GET, "/api/v1/zonas/**", "/api/v1/espacios/**").authenticated()
-                        .requestMatchers("/api/v1/zonas/**", "/api/v1/espacios/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/zonas/**", "/api/v1/espacios/**").hasAnyRole("ADMIN", "ROOT")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/zonas/**", "/api/v1/espacios/**").hasAnyRole("ADMIN", "ROOT")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/zonas/**", "/api/v1/espacios/**").hasAnyRole("ADMIN", "ROOT")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(authorities())))
                 .build();

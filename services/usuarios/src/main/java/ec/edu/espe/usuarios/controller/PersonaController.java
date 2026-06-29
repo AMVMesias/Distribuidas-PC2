@@ -8,6 +8,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +27,18 @@ public class PersonaController {
 
 	public PersonaController(PersonaService personaService) {
 		this.personaService = personaService;
+	}
+
+	@GetMapping("/me")
+	public PersonaResponse findMe(@AuthenticationPrincipal Jwt jwt) {
+		UUID id = UUID.fromString(jwt.getSubject());
+		return personaService.findById(id);
+	}
+
+	@PutMapping("/me")
+	public PersonaResponse updateMe(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody PersonaRequest request) {
+		UUID id = UUID.fromString(jwt.getSubject());
+		return personaService.update(id, request);
 	}
 
 	@GetMapping

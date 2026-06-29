@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,9 +44,21 @@ public class EspacioControlador {
         return new ResponseEntity<>(resp, HttpStatus.CREATED);
     }
 
+    @PutMapping("/{idEspacio}")
+    public ResponseEntity<EspaciosResponseDto> actualizarEspacio(@PathVariable UUID idEspacio,
+            @Valid @RequestBody EspacioRequestDto request) {
+        return ResponseEntity.ok(espacioServicio.actualizarEspacio(request, idEspacio));
+    }
+
     @PutMapping("/{idEspacio}/estado/{estado}")
     public ResponseEntity<EspaciosResponseDto> cambiarEstado(@PathVariable UUID idEspacio,
             @PathVariable String estado) {
         return ResponseEntity.ok(espacioServicio.cambiarEstado(idEspacio, EstadoEspacio.fromString(estado)));
+    }
+
+    @DeleteMapping("/{idEspacio}")
+    public ResponseEntity<Void> desactivarEspacio(@PathVariable UUID idEspacio) {
+        espacioServicio.cambiarEstado(idEspacio, EstadoEspacio.FUERA_DE_SERVICIO);
+        return ResponseEntity.noContent().build();
     }
 }
