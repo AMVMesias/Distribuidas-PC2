@@ -75,8 +75,8 @@ public class AuthService {
 	public AuthResponse register(UserCreateRequest request) {
 		UserResponse created = userService.create(request);
 		User user = users.findById(created.idPerson()).orElseThrow();
-		Role role = roles.findByNameIgnoreCase("USER")
-				.orElseThrow(() -> new NotFoundException("El rol USER no está configurado"));
+		Role role = roles.findByNameIgnoreCase("CLIENTE")
+				.orElseThrow(() -> new NotFoundException("El rol CLIENTE no está configurado"));
 		userRoles.save(new UserRole(user, role));
 		return issueSession(user, UUID.randomUUID());
 	}

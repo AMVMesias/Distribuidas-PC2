@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtStrategy } from '../auth/jwt.strategy';
+import { InternalTokenGuard } from '../auth/internal-token.guard';
 import { AsignacionesController } from './asignaciones.controller';
+import { InternalAsignacionesController } from './internal-asignaciones.controller';
 import { RootAsignacionesController } from './root-asignaciones.controller';
 import { AsignacionesService } from './asignaciones.service';
 import { InternalClients } from './clients/internal-clients';
@@ -11,7 +13,7 @@ import { VehicleAssignment } from './entities/vehicle-assignment.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([VehicleAssignment, AssignmentAuditEvent]), PassportModule],
-  controllers: [AsignacionesController, RootAsignacionesController],
-  providers: [AsignacionesService, InternalClients, JwtStrategy],
+  controllers: [AsignacionesController, RootAsignacionesController, InternalAsignacionesController],
+  providers: [AsignacionesService, InternalClients, JwtStrategy, InternalTokenGuard],
 })
 export class AsignacionesModule {}

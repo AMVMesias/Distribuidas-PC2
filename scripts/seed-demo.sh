@@ -125,9 +125,8 @@ done
 
 echo
 echo "Datos demo creados:"
-echo "  usuarios: 30 USER + 1 ADMIN"
+echo "  usuarios: 30 CLIENTE + 1 ADMIN"
 echo "  zonas: 10"
 echo "  espacios: 150"
 echo "  vehículos: 90"
 echo "Contraseña de usuarios demo: Demo12345!"
-

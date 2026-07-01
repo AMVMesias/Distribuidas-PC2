@@ -37,7 +37,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/v1/usuarios/me").authenticated()
 						.requestMatchers("/api/v1/personas/me").authenticated()
 						.requestMatchers("/api/v1/usuarios/**").hasAnyRole("ADMIN", "ROOT")
-						.requestMatchers("/api/v1/personas/**").hasAnyRole("ADMIN", "ROOT", "USER")
+						.requestMatchers("/api/v1/personas/**").hasAnyRole("ADMIN", "ROOT")
 						.requestMatchers("/api/v1/roles/**").hasAnyRole("ADMIN", "ROOT")
 						.anyRequest().hasRole("ADMIN"))
 				.oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(authorities())))
