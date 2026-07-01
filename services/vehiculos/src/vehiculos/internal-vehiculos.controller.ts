@@ -15,4 +15,10 @@ export class InternalVehiculosController {
   findInternal(@Param('id', ParseUUIDPipe) id: string) {
     return this.vehiculosService.findInternalById(id);
   }
+
+  @Get('placa/:placa')
+  @ApiOperation({ summary: 'Consulta interna de vehículo por placa' })
+  findInternalByPlaca(@Param('placa') placa: string) {
+    return this.vehiculosService.findInternalByPlaca(placa);
+  }
 }

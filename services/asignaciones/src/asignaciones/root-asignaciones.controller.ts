@@ -1,4 +1,4 @@
-import { Controller, Delete, ForbiddenException, Param, ParseUUIDPipe, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Delete, ForbiddenException, Param, ParseUUIDPipe, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../auth/auth-user';
@@ -23,11 +23,12 @@ export class RootAsignacionesController {
   @Delete('asignaciones/:userId/:vehicleId')
   @ApiOperation({ summary: '[ROOT] Eliminar asignación físicamente' })
   @ApiResponse({ status: 200, description: 'Asignación eliminada físicamente' })
+  @ApiResponse({ status: 400, description: 'userId o vehicleId inválido. Deben ser UUID válidos' })
   @ApiResponse({ status: 403, description: 'Se requiere rol ROOT' })
   @ApiResponse({ status: 404, description: 'Asignación no encontrada' })
   async physicalDeleteAssignment(
-    @Param('userId', ParseUUIDPipe) userId: string,
-    @Param('vehicleId', ParseUUIDPipe) vehicleId: string,
+    @Param('userId', userUuidPipe()) userId: string,
+    @Param('vehicleId', vehicleUuidPipe()) vehicleId: string,
     @Req() req: AuthenticatedRequest,
   ) {
     if (!req.user.roles.includes('ROOT')) {
@@ -43,4 +44,16 @@ export class RootAsignacionesController {
     await this.assignments.remove(assignment);
     return { message: 'Asignación eliminada físicamente' };
   }
+}
+
+function userUuidPipe() {
+  return new ParseUUIDPipe({
+    exceptionFactory: () => new BadRequestException('ID de usuario inválido. Debe ser un UUID válido'),
+  });
+}
+
+function vehicleUuidPipe() {
+  return new ParseUUIDPipe({
+    exceptionFactory: () => new BadRequestException('ID de vehículo inválido. Debe ser un UUID válido'),
+  });
 }

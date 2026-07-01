@@ -105,7 +105,7 @@ Edita `web/js/endpoints.js`. Cada endpoint tiene:
   id: "identificador",
   method: "POST",
   path: "/api/v1/...",
-  perm: "public" | "USER" | "ADMIN" | "USER/ADMIN",
+  perm: "public" | "CLIENTE" | "RECAUDADOR" | "ADMIN" | "CLIENTE/ADMIN",
   desc: "Texto explicativo corto",
   hint: "<ul><li>Qué esperar…</li></ul>",
   fields: [ { name, label, type, value, options?, required?, fromStore? } ],

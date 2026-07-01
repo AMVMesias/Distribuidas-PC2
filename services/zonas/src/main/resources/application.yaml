@@ -42,3 +42,5 @@ app:
     public-key: ${JWT_PUBLIC_KEY:file:/run/secrets/jwt-public.pem}
     issuer: ${JWT_ISSUER:gateway-distribuidas}
     audience: ${JWT_AUDIENCE:parking-api}
+  internal:
+    service-token: ${INTERNAL_SERVICE_TOKEN:change-me-internal-token}

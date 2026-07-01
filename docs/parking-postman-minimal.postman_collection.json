@@ -1,0 +1,426 @@
+{
+  "info": {
+    "name": "Parking Backend Minimal",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 Login ADMIN",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin12345!\"\n}"
+        }
+      }
+    },
+    {
+      "name": "02 Login RECAUDADOR",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"rdrecaudador\",\n  \"password\": \"Recaudador12345!\"\n}"
+        }
+      }
+    },
+    {
+      "name": "03 Login CLIENTE",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"adalvarez\",\n  \"password\": \"Demo12345!\"\n}"
+        }
+      }
+    },
+    {
+      "name": "04 Auth me",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/auth/me"
+      }
+    },
+    {
+      "name": "05 Listar usuarios ADMIN",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_ADMIN"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/usuarios"
+      }
+    },
+    {
+      "name": "06 Listar roles ADMIN",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_ADMIN"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/roles"
+      }
+    },
+    {
+      "name": "07 Registrar CLIENTE publico",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"cliente_nuevo\",\n  \"password\": \"Demo12345!\",\n  \"dni\": \"0912345678\",\n  \"firstName\": \"Cliente\",\n  \"lastName\": \"Nuevo\",\n  \"email\": \"cliente.nuevo@example.com\"\n}"
+        }
+      }
+    },
+    {
+      "name": "08 Crear usuario RECAUDADOR ADMIN",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_ADMIN"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/usuarios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"recaudador_nuevo\",\n  \"password\": \"Recaudador12345!\",\n  \"persona\": {\n    \"dni\": \"0999999999\",\n    \"firstName\": \"Recaudador\",\n    \"lastName\": \"Nuevo\",\n    \"email\": \"recaudador.nuevo@example.com\"\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "09 Asignar rol RECAUDADOR",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_ADMIN"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/usuarios/PEGA_AQUI_USER_ID/roles/PEGA_AQUI_ROLE_ID_RECAUDADOR"
+      }
+    },
+    {
+      "name": "10 Listar zonas",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/zonas"
+      }
+    },
+    {
+      "name": "11 Listar espacios",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/espacios"
+      }
+    },
+    {
+      "name": "12 Crear zona ADMIN",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_ADMIN"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/zonas",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Zona Prueba\",\n  \"descripcion\": \"Zona creada desde Postman manual\"\n}"
+        }
+      }
+    },
+    {
+      "name": "13 Crear espacio ADMIN",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_ADMIN"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/espacios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"A-99\",\n  \"tipo\": \"AUTO\",\n  \"estado\": \"DISPONIBLE\",\n  \"zonaId\": \"PEGA_AQUI_ID_ZONA\"\n}"
+        }
+      }
+    },
+    {
+      "name": "14 Buscar vehiculo por placa RECAUDADOR",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_RECAUDADOR"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/vehiculos/placa/PAC-0004"
+      }
+    },
+    {
+      "name": "15 Listar vehiculos CLIENTE",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_CLIENTE"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/vehiculos"
+      }
+    },
+    {
+      "name": "16 Crear vehiculo CLIENTE",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_CLIENTE"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/vehiculos",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"placa\": \"PZZ-9999\",\n  \"marca\": \"Toyota\",\n  \"modelo\": \"Yaris\",\n  \"color\": \"Blanco\",\n  \"tipo\": \"AUTO\"\n}"
+        }
+      }
+    },
+    {
+      "name": "17 Crear asignacion CLIENTE",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_CLIENTE"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/asignaciones",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vehicleId\": \"PEGA_AQUI_ID_VEHICULO\",\n  \"ownerId\": \"PEGA_AQUI_ID_USUARIO\"\n}"
+        }
+      }
+    },
+    {
+      "name": "18 Listar tickets RECAUDADOR",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_RECAUDADOR"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/tickets"
+      }
+    },
+    {
+      "name": "19 Listar tickets activos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_RECAUDADOR"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/tickets?estado=ACTIVO"
+      }
+    },
+    {
+      "name": "20 Emitir ticket por placa",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_RECAUDADOR"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/tickets",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"idEspacio\": \"PEGA_AQUI_ID_ESPACIO_DISPONIBLE\",\n  \"placa\": \"PAC-0004\"\n}"
+        }
+      }
+    },
+    {
+      "name": "21 Pagar ticket",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_RECAUDADOR"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/tickets/PEGA_AQUI_ID_TICKET/pagar"
+      }
+    },
+    {
+      "name": "22 Cancelar ticket",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_RECAUDADOR"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/tickets/PEGA_AQUI_ID_TICKET/cancelar"
+      }
+    },
+    {
+      "name": "23 Validacion vehiculo inexistente 404",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_RECAUDADOR"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/vehiculos/placa/NO-EXISTE"
+      }
+    },
+    {
+      "name": "24 Validacion duplicar ticket vehiculo 409",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_RECAUDADOR"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/tickets",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"idEspacio\": \"PEGA_AQUI_OTRO_ESPACIO_DISPONIBLE\",\n  \"placa\": \"PAB-0001\"\n}"
+        }
+      }
+    },
+    {
+      "name": "25 Validacion espacio ocupado 409",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_RECAUDADOR"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/tickets",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"idEspacio\": \"PEGA_AQUI_ID_ESPACIO_OCUPADO\",\n  \"placa\": \"PAD-0005\"\n}"
+        }
+      }
+    },
+    {
+      "name": "26 Validacion pagar dos veces 409",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer PEGA_AQUI_TOKEN_RECAUDADOR"
+          }
+        ],
+        "url": "http://localhost:8000/api/v1/tickets/PEGA_AQUI_ID_TICKET_PAGADO/pagar"
+      }
+    }
+  ]
+}
