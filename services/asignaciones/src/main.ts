@@ -37,6 +37,7 @@ async function bootstrap() {
         { name: 'Usuarios', url: '/usuarios/v3/api-docs' },
         { name: 'Vehículos', url: '/vehiculos/v3/api-docs' },
         { name: 'Zonas', url: '/zonas/v3/api-docs' },
+        { name: 'Tickets', url: '/tickets/v3/api-docs' },
       ],
       urlsPrimaryName: 'Asignaciones',
     },

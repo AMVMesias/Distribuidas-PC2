@@ -51,6 +51,14 @@ public class EspacioServicioImp implements EspacioServicio {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public EspaciosResponseDto obtenerEspacioPorId(UUID idEspacio) {
+        Espacio espacio = repositorioEspacio.findById(idEspacio)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado con id: " + idEspacio));
+        return mapper.toResponseDto(espacio);
+    }
+
+    @Override
     @Transactional
     public EspaciosResponseDto crearEspacio(EspacioRequestDto dto) {
         Zona objZona = zonaRepositorio.findById(dto.getIdZona())

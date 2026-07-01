@@ -59,6 +59,21 @@ services:
       timeout: 5s
       retries: 20
 
+  tickets-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${TICKETS_DB}
+    volumes:
+      - tickets-data:/var/lib/postgresql/data
+    networks: [tickets-db]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${TICKETS_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   usuarios:
     build: ./services/usuarios
     environment:
@@ -99,6 +114,7 @@ services:
       JWT_PUBLIC_KEY: file:/run/secrets/jwt-public.pem
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_AUDIENCE: ${JWT_AUDIENCE}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
     volumes:
       - ./.secrets/jwt-public.pem:/run/secrets/jwt-public.pem:ro
     networks: [gateway, zonas-db]
@@ -160,6 +176,42 @@ services:
       timeout: 5s
       retries: 20
 
+  tickets:
+    build: ./services/tickets
+    environment:
+      DB_HOST: tickets-db
+      DB_PORT: 5432
+      DB_USUARIO: ${POSTGRES_USER}
+      DB_CONTRASENA: ${POSTGRES_PASSWORD}
+      DB_NOMBRE: ${TICKETS_DB}
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt-public.pem
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      VEHICULOS_INTERNAL_URL: http://vehiculos:3000
+      ASIGNACIONES_INTERNAL_URL: http://asignaciones:3000
+      ZONAS_INTERNAL_URL: http://zonas:8080
+      TICKET_RATE_MOTO: ${TICKET_RATE_MOTO}
+      TICKET_RATE_AUTO: ${TICKET_RATE_AUTO}
+      TICKET_RATE_CAMIONETA: ${TICKET_RATE_CAMIONETA}
+      TICKET_RATE_BUS: ${TICKET_RATE_BUS}
+      TICKET_SPACE_FACTOR_MOTO: ${TICKET_SPACE_FACTOR_MOTO}
+      TICKET_SPACE_FACTOR_AUTO: ${TICKET_SPACE_FACTOR_AUTO}
+      TICKET_SPACE_FACTOR_BUS: ${TICKET_SPACE_FACTOR_BUS}
+    volumes:
+      - ./.secrets/jwt-public.pem:/run/secrets/jwt-public.pem:ro
+    networks: [gateway, tickets-db]
+    depends_on:
+      tickets-db: { condition: service_healthy }
+      zonas: { condition: service_healthy }
+      vehiculos: { condition: service_healthy }
+      asignaciones: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
   kong:
     image: kong:3.9.1
     environment:
@@ -178,6 +230,7 @@ services:
       zonas: { condition: service_healthy }
       vehiculos: { condition: service_healthy }
       asignaciones: { condition: service_healthy }
+      tickets: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 10s
@@ -202,6 +255,7 @@ volumes:
   zonas-data:
   vehiculos-data:
   asignaciones-data:
+  tickets-data:
 
 networks:
   gateway:
@@ -212,4 +266,6 @@ networks:
   vehiculos-db:
     internal: true
   asignaciones-db:
+    internal: true
+  tickets-db:
     internal: true

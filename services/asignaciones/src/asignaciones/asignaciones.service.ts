@@ -93,6 +93,16 @@ export class AsignacionesService {
     return this.assignments.find({ where, order: { updatedAt: 'DESC' } });
   }
 
+  async findActiveByVehicleInternal(vehicleId: string) {
+    const assignment = await this.assignments.findOne({
+      where: { vehicleId, status: AssignmentStatus.ACTIVE },
+    });
+    if (!assignment) {
+      throw new NotFoundException('El vehículo no tiene propietario activo asignado');
+    }
+    return assignment;
+  }
+
   async remove(userId: string, vehicleId: string, actor: AuthUser, requestId?: string) {
     if (!this.isAdmin(actor) && userId !== actor.userId) {
       throw new ForbiddenException('No puedes eliminar asignaciones de otro propietario');

@@ -8,7 +8,7 @@ export const AUTH_ENDPOINTS = [
     method: "POST",
     path: "/api/v1/auth/register",
     perm: "public",
-    desc: "Registra un nuevo usuario. El servicio asigna el rol USER y devuelve una sesión completa.",
+    desc: "Registra un nuevo usuario. El servicio asigna el rol CLIENTE y devuelve una sesión completa.",
     hint: `<ul>
       <li>201 con <code>user</code>, <code>accessToken</code>, <code>refreshToken</code>, <code>tokenType</code> y <code>expiresIn: 900</code>.</li>
       <li>400 si falta algún campo obligatorio o el email/DNI ya existen.</li>
@@ -86,7 +86,7 @@ export const AUTH_ENDPOINTS = [
     id: "auth-me",
     method: "GET",
     path: "/api/v1/auth/me",
-    perm: "USER/ADMIN",
+    perm: "CLIENTE/ADMIN",
     desc: "Devuelve el usuario autenticado a partir del access token.",
     hint: `<ul><li>200 con el usuario y sus roles.</li><li>401 sin token, token expirado o inválido.</li></ul>`,
     fields: [],
@@ -303,7 +303,7 @@ export const ROLES_ENDPOINTS = [
 
 export const ZONAS_ENDPOINTS = [
   {
-    id: "zonas-list", method: "GET", path: "/api/v1/zonas", perm: "USER/ADMIN",
+    id: "zonas-list", method: "GET", path: "/api/v1/zonas", perm: "CLIENTE/RECAUDADOR/ADMIN",
     desc: "Lista todas las zonas.",
     hint: `<ul><li>200 con array de zonas.</li><li>401 sin token.</li></ul>`,
     fields: [], build: () => ({}),
@@ -355,13 +355,13 @@ export const ZONAS_ENDPOINTS = [
 
 export const ESPACIOS_ENDPOINTS = [
   {
-    id: "espacios-list", method: "GET", path: "/api/v1/espacios", perm: "USER/ADMIN",
+    id: "espacios-list", method: "GET", path: "/api/v1/espacios", perm: "CLIENTE/RECAUDADOR/ADMIN",
     desc: "Lista todos los espacios.",
     hint: `<ul><li>200 con array de espacios.</li></ul>`,
     fields: [], build: () => ({}),
   },
   {
-    id: "espacios-by-zona", method: "GET", path: "/api/v1/espacios/zona/{idZona}", perm: "USER/ADMIN",
+    id: "espacios-by-zona", method: "GET", path: "/api/v1/espacios/zona/{idZona}", perm: "CLIENTE/RECAUDADOR/ADMIN",
     desc: "Lista los espacios de una zona.",
     hint: `<ul><li>200 con array de espacios.</li></ul>`,
     fields: [{ name: "idZona", label: "Zona UUID", type: "text", required: true }],
@@ -400,20 +400,27 @@ export const ESPACIOS_ENDPOINTS = [
 
 export const VEHICULOS_ENDPOINTS = [
   {
-    id: "vehiculos-list", method: "GET", path: "/api/v1/vehiculos", perm: "USER/ADMIN",
-    desc: "Lista vehículos. USER ve los propios; ADMIN ve todos.",
+    id: "vehiculos-list", method: "GET", path: "/api/v1/vehiculos", perm: "CLIENTE/RECAUDADOR/ADMIN",
+    desc: "Lista vehículos. CLIENTE ve los propios; RECAUDADOR, ADMIN y ROOT ven todos.",
     hint: `<ul><li>200 con array de vehículos.</li><li>401 sin token.</li></ul>`,
     fields: [], build: () => ({}),
   },
   {
-    id: "vehiculos-get", method: "GET", path: "/api/v1/vehiculos/{id}", perm: "USER/ADMIN",
-    desc: "Obtiene un vehículo por UUID. USER sólo si es el dueño.",
+    id: "vehiculos-get", method: "GET", path: "/api/v1/vehiculos/{id}", perm: "CLIENTE/RECAUDADOR/ADMIN",
+    desc: "Obtiene un vehículo por UUID. CLIENTE sólo si es el dueño; RECAUDADOR puede consultar.",
     hint: `<ul><li>200 con el vehículo.</li><li>403 si no eres dueño ni ADMIN.</li><li>404 si no existe.</li></ul>`,
     fields: [{ name: "id", label: "UUID", type: "text", required: true }],
     build: (v) => ({ path: `/api/v1/vehiculos/${v.id}` }),
   },
   {
-    id: "vehiculos-create", method: "POST", path: "/api/v1/vehiculos", perm: "USER/ADMIN",
+    id: "vehiculos-by-placa", method: "GET", path: "/api/v1/vehiculos/placa/{placa}", perm: "CLIENTE/RECAUDADOR/ADMIN",
+    desc: "Busca un vehículo por placa. Útil para operación de RECAUDADOR.",
+    hint: `<ul><li>200 con el vehículo.</li><li>404 si no existe o CLIENTE no es dueño.</li></ul>`,
+    fields: [{ name: "placa", label: "Placa", type: "text", required: true, value: "ABC-1234" }],
+    build: (v) => ({ path: `/api/v1/vehiculos/placa/${v.placa}` }),
+  },
+  {
+    id: "vehiculos-create", method: "POST", path: "/api/v1/vehiculos", perm: "CLIENTE/ADMIN",
     desc: "Crea un vehículo. El ownerId se toma del claim sub del token, no del body.",
     hint: `<ul>
       <li>201 con el vehículo creado. <strong>ownerId</strong> vendrá del JWT.</li>
@@ -450,8 +457,8 @@ export const VEHICULOS_ENDPOINTS = [
     },
   },
   {
-    id: "vehiculos-update", method: "PATCH", path: "/api/v1/vehiculos/{id}", perm: "USER/ADMIN",
-    desc: "Actualiza parcialmente un vehículo. USER sólo si es dueño.",
+    id: "vehiculos-update", method: "PATCH", path: "/api/v1/vehiculos/{id}", perm: "CLIENTE/ADMIN",
+    desc: "Actualiza parcialmente un vehículo. CLIENTE sólo si es dueño. RECAUDADOR no modifica vehículos.",
     hint: `<ul><li>200 con el vehículo actualizado.</li><li>403 si no eres dueño ni ADMIN.</li></ul>`,
     fields: [
       { name: "id", label: "UUID", type: "text", required: true },
@@ -485,11 +492,63 @@ export const VEHICULOS_ENDPOINTS = [
     },
   },
   {
-    id: "vehiculos-delete", method: "DELETE", path: "/api/v1/vehiculos/{id}", perm: "USER/ADMIN",
-    desc: "Elimina un vehículo. USER sólo si es dueño.",
+    id: "vehiculos-delete", method: "DELETE", path: "/api/v1/vehiculos/{id}", perm: "CLIENTE/ADMIN",
+    desc: "Elimina un vehículo. CLIENTE sólo si es dueño. RECAUDADOR no elimina vehículos.",
     hint: `<ul><li>200 o 204.</li><li>403 si no eres dueño ni ADMIN.</li></ul>`,
     fields: [{ name: "id", label: "UUID", type: "text", required: true }],
     build: (v) => ({ path: `/api/v1/vehiculos/${v.id}` }),
+  },
+];
+
+export const TICKETS_ENDPOINTS = [
+  {
+    id: "tickets-list", method: "GET", path: "/api/v1/tickets", perm: "CLIENTE/RECAUDADOR/ADMIN",
+    desc: "Lista tickets. CLIENTE ve los propios; RECAUDADOR, ADMIN y ROOT consultan operación.",
+    hint: `<ul><li>200 con array de tickets.</li></ul>`,
+    fields: [
+      { name: "estado", label: "Estado", type: "select", options: ["", "ACTIVO", "PAGADO", "CANCELADO"], value: "" },
+      { name: "idUsuario", label: "Usuario UUID", type: "text", value: "" },
+      { name: "idVehiculo", label: "Vehículo UUID", type: "text", value: "" },
+      { name: "idEspacio", label: "Espacio UUID", type: "text", value: "" },
+    ],
+    build: (v) => {
+      const params = new URLSearchParams();
+      ["estado", "idUsuario", "idVehiculo", "idEspacio"].forEach((key) => { if (v[key]) params.set(key, v[key]); });
+      const query = params.toString();
+      return { path: `/api/v1/tickets${query ? `?${query}` : ""}` };
+    },
+  },
+  {
+    id: "tickets-get", method: "GET", path: "/api/v1/tickets/{id}", perm: "CLIENTE/RECAUDADOR/ADMIN",
+    desc: "Obtiene un ticket por UUID.",
+    hint: `<ul><li>200 con el ticket.</li><li>403 si CLIENTE intenta ver uno ajeno.</li></ul>`,
+    fields: [{ name: "id", label: "Ticket UUID", type: "text", required: true }],
+    build: (v) => ({ path: `/api/v1/tickets/${v.id}` }),
+  },
+  {
+    id: "tickets-create", method: "POST", path: "/api/v1/tickets", perm: "RECAUDADOR/ADMIN",
+    desc: "Emite un ticket de ingreso y ocupa el espacio.",
+    hint: `<ul><li>201 con ticket ACTIVO.</li><li>409 si el vehículo ya tiene ticket activo o el espacio no está disponible.</li></ul>`,
+    fields: [
+      { name: "idEspacio", label: "Espacio UUID", type: "text", required: true },
+      { name: "idVehiculo", label: "Vehículo UUID", type: "text", value: "" },
+      { name: "placa", label: "Placa", type: "text", value: "ABC-1234" },
+    ],
+    build: (v) => ({ body: { idEspacio: v.idEspacio, idVehiculo: v.idVehiculo || undefined, placa: v.placa || undefined } }),
+  },
+  {
+    id: "tickets-pay", method: "PATCH", path: "/api/v1/tickets/{id}/pagar", perm: "RECAUDADOR/ADMIN",
+    desc: "Registra salida, calcula valor recaudado y libera el espacio.",
+    hint: `<ul><li>200 con ticket PAGADO.</li><li>409 si el ticket no está ACTIVO.</li></ul>`,
+    fields: [{ name: "id", label: "Ticket UUID", type: "text", required: true }],
+    build: (v) => ({ path: `/api/v1/tickets/${v.id}/pagar` }),
+  },
+  {
+    id: "tickets-cancel", method: "PATCH", path: "/api/v1/tickets/{id}/cancelar", perm: "RECAUDADOR/ADMIN",
+    desc: "Cancela un ticket activo, deja valor 0 y libera el espacio.",
+    hint: `<ul><li>200 con ticket CANCELADO.</li><li>409 si el ticket no está ACTIVO.</li></ul>`,
+    fields: [{ name: "id", label: "Ticket UUID", type: "text", required: true }],
+    build: (v) => ({ path: `/api/v1/tickets/${v.id}/cancelar` }),
   },
 ];
 
@@ -498,7 +557,8 @@ export const SECTIONS = {
   usuarios: { title: "Usuarios", lead: "Gestión de usuarios. Sólo <strong>ADMIN</strong>.", endpoints: USUARIOS_ENDPOINTS },
   personas: { title: "Personas", lead: "CRUD de personas. Sólo <strong>ADMIN</strong>.", endpoints: PERSONAS_ENDPOINTS },
   roles: { title: "Roles", lead: "CRUD de roles. Sólo <strong>ADMIN</strong>.", endpoints: ROLES_ENDPOINTS },
-  zonas: { title: "Zonas", lead: "Gestión de zonas de parking. <strong>USER</strong> puede leer; <strong>ADMIN</strong> escribe.", endpoints: ZONAS_ENDPOINTS },
-  espacios: { title: "Espacios", lead: "Gestión de espacios dentro de zonas. <strong>USER</strong> lee; <strong>ADMIN</strong> escribe.", endpoints: ESPACIOS_ENDPOINTS },
-  vehiculos: { title: "Vehículos", lead: "Gestión de vehículos. <strong>USER</strong> opera los propios; <strong>ADMIN</strong> opera todos. El <code>ownerId</code> se toma del JWT.", endpoints: VEHICULOS_ENDPOINTS },
+  zonas: { title: "Zonas", lead: "Gestión de zonas de parking. <strong>CLIENTE</strong> y <strong>RECAUDADOR</strong> leen; <strong>ADMIN</strong> escribe.", endpoints: ZONAS_ENDPOINTS },
+  espacios: { title: "Espacios", lead: "Gestión de espacios dentro de zonas. <strong>CLIENTE</strong> y <strong>RECAUDADOR</strong> leen; <strong>ADMIN</strong> escribe.", endpoints: ESPACIOS_ENDPOINTS },
+  vehiculos: { title: "Vehículos", lead: "Gestión de vehículos. <strong>CLIENTE</strong> opera los propios; <strong>RECAUDADOR</strong> consulta; <strong>ADMIN</strong> opera todos.", endpoints: VEHICULOS_ENDPOINTS },
+  tickets: { title: "Tickets", lead: "Emisión, pago y cancelación de tickets. <strong>RECAUDADOR</strong> opera entradas y salidas.", endpoints: TICKETS_ENDPOINTS },
 };

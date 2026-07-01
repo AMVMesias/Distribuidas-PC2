@@ -150,11 +150,11 @@ function renderIntro() {
         ])),
         el("tbody", {}, [
           ["auth/register, login, refresh, logout", "Público"],
-          ["auth/me", "USER o ADMIN"],
+          ["auth/me", "CLIENTE o ADMIN"],
           ["usuarios, personas, roles", "Sólo ADMIN"],
-          ["zonas (GET), espacios (GET)", "USER o ADMIN"],
+          ["zonas (GET), espacios (GET)", "CLIENTE, RECAUDADOR o ADMIN"],
           ["zonas, espacios (escritura)", "Sólo ADMIN"],
-          ["vehiculos", "USER sobre los propios · ADMIN sobre todos"],
+          ["vehiculos", "CLIENTE sobre los propios · RECAUDADOR consulta · ADMIN sobre todos"],
         ].map(([r, p]) => el("tr", {}, [
           el("td", { style: "padding: 8px; border-bottom: 1px dashed var(--border); font-family: var(--mono); font-size: 12px;" }, r),
           el("td", { style: "padding: 8px; border-bottom: 1px dashed var(--border); font-size: 12px;" }, p),
@@ -355,6 +355,7 @@ const DOCS_SERVICES = [
   { id: "usuarios", title: "Servicio de Usuarios", desc: "Auth, personas, usuarios y roles (Spring Boot + springdoc-openapi).", stack: "Spring Boot 4.1" },
   { id: "zonas", title: "Servicio de Zonas y Espacios", desc: "Zonas de parking y sus espacios (Spring Boot + springdoc-openapi).", stack: "Spring Boot 4.0" },
   { id: "vehiculos", title: "Servicio de Vehículos", desc: "Vehículos por dueño (NestJS + @nestjs/swagger).", stack: "NestJS 11" },
+  { id: "tickets", title: "Servicio de Tickets", desc: "Emisión, pago y cancelación de tickets de parqueadero (NestJS + @nestjs/swagger).", stack: "NestJS 11" },
 ];
 
 async function checkDocsHealth() {
@@ -416,6 +417,8 @@ function renderDocs() {
         el("li", {}, "GET /zonas/v3/api-docs               → spec zonas"),
         el("li", {}, "GET /vehiculos/swagger-ui            → UI NestJS (vehículos)"),
         el("li", {}, "GET /vehiculos/v3/api-docs           → spec vehículos"),
+        el("li", {}, "GET /tickets/swagger-ui              → UI NestJS (tickets)"),
+        el("li", {}, "GET /tickets/v3/api-docs             → spec tickets"),
       ]),
     ]),
   ]);
@@ -607,9 +610,9 @@ function renderHelp() {
           "El token pasó Kong pero el backend decidió que tu rol no permite esa operación. Revisa los permisos en la tabla de rutas."),
       ]),
       el("div", { class: "card" }, [
-        el("h3", {}, "¿Cómo pruebo como ADMIN y como USER?"),
+        el("h3", {}, "¿Cómo pruebo como ADMIN y como CLIENTE?"),
         el("p", { style: "color: var(--text-muted);" },
-          "Inicia sesión con admin (ADMIN) y prueba. Luego regístrate o haz login con un USER (contraseña Demo12345! en el seed) para ver los 403."),
+          "Inicia sesión con admin (ADMIN) y prueba. Luego regístrate o haz login con un CLIENTE para ver los 403."),
       ]),
       el("div", { class: "card" }, [
         el("h3", {}, "¿Puedo cambiar la URL de Kong?"),

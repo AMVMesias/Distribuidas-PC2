@@ -17,6 +17,8 @@ public interface EspacioServicio {
 
     List<EspaciosResponseDto> obtenerEspaciosPorZona(UUID idZona);
 
+    EspaciosResponseDto obtenerEspacioPorId(UUID idEspacio);
+
     void eliminiarEspacio(UUID idEspacio);
 
     EspaciosResponseDto cambiarEstado(UUID idEspacio, EstadoEspacio estado);
