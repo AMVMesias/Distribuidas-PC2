@@ -129,7 +129,7 @@ public class ZonaServicioImpl implements ZonaServicio {
 
         for (int intento = 0; intento < 5; intento++) {
             String sufijo = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
-            String codigo = String.format("TICK-%s%s-%s-%s", inicialNombre, inicialTipo, fechaHora, sufijo);
+            String codigo = String.format("ZON-%s%s-%s-%s", inicialNombre, inicialTipo, fechaHora, sufijo);
             if (!zonaRepositorio.existsByCodigo(codigo)) {
                 return codigo;
             }

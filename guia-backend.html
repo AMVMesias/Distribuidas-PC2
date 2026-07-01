@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía completa del backend · Parking Distribuidas</title>
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --panel: #ffffff;
+    --ink: #1c2635;
+    --muted: #657387;
+    --line: #dce3ee;
+    --blue: #1f6feb;
+    --green: #148a42;
+    --amber: #9a6700;
+    --red: #c7352b;
+    --violet: #6f42c1;
+    --code: #0f172a;
+    --codeText: #e5edf7;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.55;
+  }
+
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  aside {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: auto;
+    border-right: 1px solid var(--line);
+    background: #eef3f9;
+    padding: 24px 18px;
+  }
+
+  aside h1 {
+    margin: 0 0 6px;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  aside p {
+    margin: 0 0 18px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  nav a {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 6px;
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  nav a:hover {
+    background: #dde8f6;
+    text-decoration: none;
+  }
+
+  nav a.active-nav {
+    background: #d8e8ff;
+    color: var(--blue);
+    font-weight: 700;
+  }
+
+  main {
+    max-width: 1120px;
+    width: 100%;
+    padding: 36px;
+  }
+
+  header {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+
+  header h2 {
+    margin: 0 0 10px;
+    font-size: 34px;
+    line-height: 1.1;
+  }
+
+  header p {
+    margin: 0;
+    color: var(--muted);
+    max-width: 850px;
+  }
+
+  section {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 18px 0;
+  }
+
+  main > section {
+    display: none;
+  }
+
+  main > section.active-section {
+    display: block;
+  }
+
+  h2 {
+    margin: 0 0 14px;
+    font-size: 25px;
+  }
+
+  h3 {
+    margin: 22px 0 10px;
+    font-size: 18px;
+  }
+
+  h4 {
+    margin: 16px 0 8px;
+    font-size: 15px;
+  }
+
+  p { margin: 8px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 6px 0; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    background: #fbfdff;
+  }
+
+  .card h3 {
+    margin-top: 0;
+  }
+
+  .pill {
+    display: inline-block;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px 9px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    background: #f8fafc;
+  }
+
+  .role-cliente { color: var(--blue); }
+  .role-recaudador { color: var(--green); }
+  .role-admin { color: var(--amber); }
+  .role-root { color: var(--red); }
+
+  .note, .warn, .ok {
+    border-left: 4px solid var(--blue);
+    padding: 12px 14px;
+    background: #f2f7ff;
+    border-radius: 6px;
+    margin: 14px 0;
+  }
+
+  .warn {
+    border-left-color: var(--amber);
+    background: #fff8e6;
+  }
+
+  .ok {
+    border-left-color: var(--green);
+    background: #effaf3;
+  }
+
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    background: #eef2f7;
+    padding: 2px 5px;
+    border-radius: 4px;
+  }
+
+  pre {
+    margin: 12px 0;
+    padding: 14px;
+    background: var(--code);
+    color: var(--codeText);
+    border-radius: 8px;
+    overflow: auto;
+    font-size: 13px;
+  }
+
+  pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+
+  th, td {
+    border: 1px solid var(--line);
+    padding: 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    background: #eef3f9;
+  }
+
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin: 14px 0;
+  }
+
+  .step {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    background: #fbfdff;
+    min-height: 116px;
+  }
+
+  .step strong {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .decision {
+    border: 1px solid #c8b5f2;
+    background: #faf7ff;
+  }
+
+  .small { color: var(--muted); font-size: 13px; }
+
+  .usecase {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    background: #fbfdff;
+  }
+
+  .usecase h3 {
+    margin-top: 0;
+  }
+
+  .swagger-step {
+    border-left: 3px solid var(--blue);
+    padding: 10px 12px;
+    margin: 10px 0;
+    background: #f7fbff;
+    border-radius: 6px;
+  }
+
+  .swagger-step strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .tabs {
+    margin-top: 16px;
+  }
+
+  .tab-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .tab-button {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #f8fafc;
+    color: var(--ink);
+    padding: 8px 10px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .tab-button.active {
+    border-color: var(--blue);
+    background: #eaf2ff;
+    color: var(--blue);
+    font-weight: 700;
+  }
+
+  .tab-panel {
+    display: none;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    aside {
+      position: static;
+      height: auto;
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+    main { padding: 18px; }
+    .grid, .flow { grid-template-columns: 1fr; }
+    header h2 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <h1>Guía del backend</h1>
+    <p>Uso completo de la plataforma de parqueadero.</p>
+    <nav>
+      <a href="#idea">1. Idea general</a>
+      <a href="#arranque">2. Arranque diario</a>
+      <a href="#swagger">3. Swagger y token</a>
+      <a href="#roles">4. Roles</a>
+      <a href="#login-roles">5. Iniciar por rol</a>
+      <a href="#flujo">6. Flujo completo</a>
+      <a href="#casos">7. Casos de uso en Swagger</a>
+      <a href="#validaciones">8. Pruebas de validación</a>
+      <a href="#usuarios">9. Usuarios</a>
+      <a href="#zonas">10. Zonas y espacios</a>
+      <a href="#vehiculos">11. Vehículos</a>
+      <a href="#asignaciones">12. Asignaciones</a>
+      <a href="#tickets">13. Tickets</a>
+      <a href="#decisiones">14. Si tienes dos caminos</a>
+      <a href="#errores">15. Errores comunes</a>
+      <a href="#comandos">16. Comandos clave</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header>
+      <h2>Cómo usar el backend de inicio a fin</h2>
+      <p>
+        Esta guía está pensada para trabajar con Swagger sin perderse entre tantos endpoints.
+        Sigue el flujo recomendado y usa las secciones de decisión cuando llegues a un punto donde se puede hacer más de una cosa.
+      </p>
+    </header>
+
+    <section id="idea">
+      <h2>1. Idea general</h2>
+      <p>La plataforma tiene 5 microservicios detrás de Kong:</p>
+      <div class="grid">
+        <div class="card"><h3>usuarios</h3><p>Login, registro, personas, usuarios y roles. Firma los JWT.</p></div>
+        <div class="card"><h3>zonas</h3><p>Zonas y espacios del parqueadero. Controla si un espacio está disponible u ocupado.</p></div>
+        <div class="card"><h3>vehiculos</h3><p>Vehículos por cliente. Permite buscar por placa para operar en puerta.</p></div>
+        <div class="card"><h3>asignaciones</h3><p>Relación oficial entre vehículo y propietario.</p></div>
+        <div class="card"><h3>tickets</h3><p>Entrada, salida, pago, cancelación y valor recaudado.</p></div>
+      </div>
+      <div class="note">
+        Todo se consume por Kong: <code>http://localhost:8000</code>. No llames directo a los backends internos.
+      </div>
+    </section>
+
+    <section id="arranque">
+      <h2>2. Arranque diario</h2>
+      <h3>Primera vez o si faltan secretos</h3>
+      <pre><code>bash scripts/bootstrap.sh</code></pre>
+      <p>Esto genera/prepara:</p>
+      <ul>
+        <li><code>.env</code></li>
+        <li><code>.secrets/jwt-private.pem</code></li>
+        <li><code>.secrets/jwt-public.pem</code></li>
+        <li><code>infrastructure/kong/kong.yml</code></li>
+      </ul>
+
+      <h3>Levantar todo</h3>
+      <pre><code>docker compose up -d --build</code></pre>
+
+      <h3>Confirmar estado</h3>
+      <pre><code>docker compose ps</code></pre>
+      <p>Busca que estén <code>healthy</code>: usuarios, zonas, vehiculos, asignaciones, tickets, kong y web.</p>
+
+      <div class="warn">
+        Si cambiaste <code>.env</code>, claves JWT o Kong, vuelve a correr <code>bash scripts/bootstrap.sh</code> y recrea los servicios con <code>docker compose up -d --build</code>.
+      </div>
+    </section>
+
+    <section id="swagger">
+      <h2>3. Swagger y token</h2>
+      <p>Swagger centralizado:</p>
+      <pre><code>http://localhost:8000/asignaciones/swagger-ui</code></pre>
+      <p>Desde el selector superior puedes cambiar entre Usuarios, Zonas, Vehículos, Asignaciones y Tickets.</p>
+
+      <h3>Cómo leer Swagger sin perderte</h3>
+      <div class="note">
+        Swagger muestra nombres técnicos como <code>persona-controller</code> o <code>user-controller</code>. No son pasos de negocio, solo son carpetas donde Swagger agrupa endpoints.
+      </div>
+      <table>
+        <thead>
+          <tr><th>Si ves esto en Swagger</th><th>Piensa esto</th><th>Cuándo abrirlo</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>auth-controller</code></td><td>Login, registro y sesión actual</td><td>Cuando necesitas entrar, registrar cliente o probar tu token.</td></tr>
+          <tr><td><code>user-controller</code></td><td>Usuarios del sistema</td><td>Cuando ADMIN crea usuarios o asigna roles.</td></tr>
+          <tr><td><code>role-controller</code></td><td>Roles</td><td>Cuando necesitas copiar el ID de <code>RECAUDADOR</code>, <code>ADMIN</code>, etc.</td></tr>
+          <tr><td><code>persona-controller</code></td><td>Datos personales</td><td>Cuando ADMIN busca una persona por cédula, nombre o correo.</td></tr>
+          <tr><td><code>vehiculos</code></td><td>Carros, motos, placas</td><td>Cuando CLIENTE crea vehículos o RECAUDADOR busca por placa.</td></tr>
+          <tr><td><code>tickets</code></td><td>Entrada, salida, pago y cancelación</td><td>Cuando RECAUDADOR trabaja en la puerta.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Cómo iniciar sesión</h3>
+      <ol>
+        <li>En Swagger selecciona <strong>Usuarios</strong>.</li>
+        <li>Busca el bloque <code>auth-controller</code>. Ese bloque significa autenticación.</li>
+        <li>Abre <code>POST /api/v1/auth/login</code>.</li>
+        <li>Presiona <strong>Try it out</strong>.</li>
+        <li>Pega el JSON de login.</li>
+        <li>Presiona <strong>Execute</strong>.</li>
+      </ol>
+      <pre><code>{
+  "username": "admin",
+  "password": "Admin12345!"
+}</code></pre>
+      <p>Copia el <code>accessToken</code>. Luego presiona <strong>Authorize</strong> y pega:</p>
+      <pre><code>TU_ACCESS_TOKEN</code></pre>
+      <div class="warn">
+        En Swagger pega solo el token. No pegues <code>Bearer</code>, comillas, el JSON completo ni el <code>refreshToken</code>.
+      </div>
+      <div class="ok">
+        Para comprobar que estás autenticado, en el mismo bloque <code>auth-controller</code> ejecuta <code>GET /api/v1/auth/me</code>.
+      </div>
+    </section>
+
+    <section id="roles">
+      <h2>4. Roles</h2>
+      <table>
+        <thead>
+          <tr><th>Rol</th><th>Para qué sirve</th><th>Qué puede hacer</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pill role-cliente">CLIENTE</span></td>
+            <td>Persona que usa el parqueadero.</td>
+            <td>Ver zonas/espacios, crear sus vehículos, ver sus tickets y asignaciones.</td>
+          </tr>
+          <tr>
+            <td><span class="pill role-recaudador">RECAUDADOR</span></td>
+            <td>Empleado de puerta.</td>
+            <td>Buscar vehículos, crear tickets, pagar tickets y cancelar tickets.</td>
+          </tr>
+          <tr>
+            <td><span class="pill role-admin">ADMIN</span></td>
+            <td>Administrador funcional.</td>
+            <td>Gestionar usuarios, roles, zonas, espacios, vehículos, asignaciones y tickets.</td>
+          </tr>
+          <tr>
+            <td><span class="pill role-root">ROOT</span></td>
+            <td>Superusuario técnico.</td>
+            <td>Puede usar rutas <code>/root/**</code> para borrado físico.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">
+        El microservicio se llama <code>usuarios</code>, pero eso no significa que exista el rol viejo <code>USER</code>. El rol funcional normal ahora es <code>CLIENTE</code>.
+      </div>
+    </section>
+
+    <section id="login-roles">
+      <h2>5. Iniciar sesión por rol</h2>
+      <p>
+        Cada vez que cambies de rol, vuelve a ejecutar login, copia el nuevo <code>accessToken</code>
+        y reemplázalo en el botón <strong>Authorize</strong> de Swagger.
+      </p>
+
+      <div class="usecase">
+        <h3><span class="pill role-admin">ADMIN</span> Login válido para administrar</h3>
+        <div class="note">
+          <strong>Cuándo usarlo:</strong> crear zonas, espacios, usuarios, recaudadores, consultar personas por cédula, revisar todo.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso: Usuarios, bloque de login, endpoint POST /api/v1/auth/login</strong>
+          <pre><code>{
+  "username": "admin",
+  "password": "Admin12345!"
+}</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Después del login</strong>
+          <p>Copia solo <code>accessToken</code>, pulsa <strong>Authorize</strong> y pégalo sin <code>Bearer</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Prueba rápida</strong>
+          <p>Ejecuta <code>GET /api/v1/usuarios</code>. Si lista usuarios, estás como ADMIN.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-recaudador">RECAUDADOR</span> Login válido para operar puerta</h3>
+        <div class="note">
+          <strong>Cuándo usarlo:</strong> buscar vehículo por placa, crear ticket, pagar ticket, cancelar ticket, ver espacios disponibles.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso: Usuarios, bloque de login, endpoint POST /api/v1/auth/login</strong>
+          <pre><code>{
+  "username": "rdrecaudador",
+  "password": "Recaudador12345!"
+}</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Después del login</strong>
+          <p>Copia solo <code>accessToken</code>, pulsa <strong>Authorize</strong> y reemplaza el token anterior.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Prueba rápida</strong>
+          <p>Ejecuta <code>GET /api/v1/vehiculos/placa/PAC-0004</code> o <code>GET /api/v1/tickets</code>.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-cliente">CLIENTE</span> Login válido para usuario normal</h3>
+        <div class="note">
+          <strong>Cuándo usarlo:</strong> ver sus propios vehículos, asignaciones y tickets; crear vehículo propio; ver zonas y espacios.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso: Usuarios, bloque de login, endpoint POST /api/v1/auth/login</strong>
+          <pre><code>{
+  "username": "adalvarez",
+  "password": "Demo12345!"
+}</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Después del login</strong>
+          <p>Copia solo <code>accessToken</code>, pulsa <strong>Authorize</strong> y reemplaza el token anterior.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Prueba rápida</strong>
+          <p>Ejecuta <code>GET /api/v1/vehiculos</code>. Debe mostrar solo vehículos de ese cliente.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-root">ROOT</span> Login para borrado físico</h3>
+        <div class="warn">
+          <strong>Importante:</strong> en la base demo actual no dejé una cuenta ROOT lista para usar. ROOT se usa solo para rutas <code>/api/v1/root/**</code> y borrado físico. Para pruebas normales usa ADMIN.
+        </div>
+        <div class="swagger-step">
+          <strong>Si necesitas ROOT</strong>
+          <p>Primero debes crear un usuario, buscar el rol <code>ROOT</code> con <code>GET /api/v1/roles</code> y asignarlo con <code>POST /api/v1/usuarios/{userId}/roles/{roleId}</code>. Hazlo solo si el profesor pide probar borrado físico.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="flujo">
+      <h2>6. Flujo completo recomendado</h2>
+      <p>
+        Usa esta guía por <strong>casos de uso</strong>, no como una lista larga.
+        Cada caso tiene su propia pestaña con lo previo, el servicio de Swagger, el endpoint, el JSON y qué dato guardar.
+      </p>
+      <div class="ok">
+        Para trabajar: abre <a href="#casos">7. Casos de uso en Swagger</a>. Para demostrar validaciones y errores: abre <a href="#validaciones">8. Pruebas de validación</a>.
+      </div>
+    </section>
+
+    <section id="casos">
+      <h2>7. Casos de uso en Swagger</h2>
+      <p>Entra por <code>http://localhost:8000/asignaciones/swagger-ui</code>. Cambia el servicio arriba y sigue estos flujos.</p>
+
+      <div class="usecase">
+        <h3><span class="pill role-admin">ADMIN</span> Caso 1: entrar y dejar Swagger autorizado</h3>
+        <div class="note">
+          <strong>Objetivo:</strong> entrar como ADMIN para poder administrar usuarios, roles, zonas, espacios y revisar datos.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: ve al servicio Usuarios</strong>
+          <p>En Swagger, arriba, selecciona <strong>Usuarios</strong>. Luego abre el bloque <code>auth-controller</code>, que es el bloque de login.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 2: abre POST /api/v1/auth/login</strong>
+          <p>Presiona <strong>Try it out</strong> y coloca:</p>
+          <pre><code>{
+  "username": "admin",
+  "password": "Admin12345!"
+}</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 3: copia accessToken y autoriza Swagger</strong>
+          <p>Copia solo <code>accessToken</code> y pegalo. No pegues <code>Bearer</code>, comillas ni <code>refreshToken</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 4: prueba que el token sirve</strong>
+          <p>Ejecuta para comprobar que el token quedo bien. Debe responder el usuario <code>admin</code>.</p>
+          <pre><code>GET /api/v1/auth/me</code></pre>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-cliente">CLIENTE</span> Caso 2: registrar un cliente</h3>
+        <div class="note">
+          <strong>Objetivo:</strong> crear un cliente normal. Al registrarse queda con rol <code>CLIENTE</code> automáticamente.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: ve a Usuarios y abre registro</strong>
+          <p>En Swagger selecciona <strong>Usuarios</strong>, abre <code>auth-controller</code> y entra a <code>POST /api/v1/auth/register</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 2: presiona Try it out y pega el JSON</strong>
+          <p>Esto crea persona, usuario y rol <code>CLIENTE</code> automáticamente.</p>
+          <pre><code>{
+  "persona": {
+    "dni": "1712345678",
+    "firstName": "Juan",
+    "middleName": null,
+    "lastName": "Perez",
+    "email": "juan.perez@test.com",
+    "phone": "0999999999",
+    "address": "Cuenca",
+    "nationality": "Ecuatoriana"
+  },
+  "password": "Cliente12345!"
+}</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 3: guarda estos datos de la respuesta</strong>
+          <p><code>user.idPerson</code> es el ID del cliente. <code>user.username</code> es el nombre con el que hara login. El <code>accessToken</code> ya viene con rol CLIENTE.</p>
+        </div>
+        <div class="ok">Cliente demo disponible: <code>adalvarez / Demo12345!</code>.</div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-admin">ADMIN</span> Caso 3: crear un recaudador</h3>
+        <div class="note">
+          <strong>Objetivo:</strong> crear un empleado de puerta. Este caso necesita ADMIN porque un usuario normal no puede darse el rol RECAUDADOR a sí mismo.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso previo: entra como ADMIN</strong>
+          <p>Primero haz el Caso 1 y deja Swagger autorizado con token ADMIN.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: crear el usuario empleado</strong>
+          <p>En Swagger selecciona <strong>Usuarios</strong>, abre el bloque <code>user-controller</code> y entra a <code>POST /api/v1/usuarios</code>. Esto crea el usuario, pero todavía no le da rol RECAUDADOR.</p>
+          <pre><code>{
+  "persona": {
+    "dni": "1723456789",
+    "firstName": "Carlos",
+    "middleName": null,
+    "lastName": "Recaudador",
+    "email": "carlos.recaudador@test.com",
+    "phone": "0991234567",
+    "address": "Cuenca",
+    "nationality": "Ecuatoriana"
+  },
+  "password": "Recaudador12345!"
+}</code></pre>
+          <p>Guarda <code>idPerson</code> como <code>userId</code> y guarda el <code>username</code> generado.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 2: buscar el ID del rol RECAUDADOR</strong>
+          <p>En el mismo servicio <strong>Usuarios</strong>, abre <code>role-controller</code> y ejecuta:</p>
+          <pre><code>GET /api/v1/roles</code></pre>
+          <p>Busca <code>"name": "RECAUDADOR"</code> y copia su <code>id</code> como <code>roleId</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 3: asignar el rol RECAUDADOR al usuario</strong>
+          <p>Vuelve a <code>user-controller</code> y abre:</p>
+          <pre><code>POST /api/v1/usuarios/{userId}/roles/{roleId}</code></pre>
+          <p>En <code>userId</code> pega el <code>idPerson</code>. En <code>roleId</code> pega el ID del rol RECAUDADOR. Si Swagger pide body, pon:</p>
+          <pre><code>{}</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 4: probar login del recaudador</strong>
+          <p>Abre <code>auth-controller</code> y ejecuta <code>POST /api/v1/auth/login</code>.</p>
+          <p>Prueba el login con el <code>username</code> generado y la contraseña que pusiste.</p>
+        </div>
+        <div class="ok">Recaudador demo disponible: <code>rdrecaudador / Recaudador12345!</code>.</div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-admin">ADMIN</span> Caso 4: crear zona y espacio</h3>
+        <div class="note">
+          <strong>Objetivo:</strong> crear un lugar físico donde luego el RECAUDADOR pueda emitir tickets.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso previo: entra como ADMIN</strong>
+          <p>Haz el Caso 1 y deja Swagger autorizado con token ADMIN.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: crear una zona</strong>
+          <p>En Swagger selecciona <strong>Zonas</strong>. Busca el bloque de zonas y abre <code>POST /api/v1/zonas</code>.</p>
+          <pre><code>{
+  "nombre": "Zona Prueba",
+  "descripcion": "Zona creada desde Swagger",
+  "tipo": "REGULAR",
+  "capacidad": 10
+}</code></pre>
+          <p>Guarda el <code>id</code> devuelto. Ese es <code>idZona</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 2: crear un espacio dentro de esa zona</strong>
+          <p>En el mismo servicio <strong>Zonas</strong>, busca el bloque de espacios y abre <code>POST /api/v1/espacios</code>.</p>
+          <pre><code>{
+  "codigo": "P-001",
+  "idZona": "ID_DE_LA_ZONA",
+  "descripcion": "Espacio de prueba para auto",
+  "tipo": "AUTO",
+  "capacidad": 1,
+  "estado": "DISPONIBLE"
+}</code></pre>
+          <p>Guarda el <code>id</code> devuelto. Ese es <code>idEspacio</code> para tickets.</p>
+        </div>
+        <div class="ok">
+          Resultado esperado: el espacio debe aparecer como <code>DISPONIBLE</code> cuando ejecutes <code>GET /api/v1/espacios</code>.
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-cliente">CLIENTE</span> Caso 5: crear vehiculo propio</h3>
+        <div class="swagger-step">
+          <strong>Paso previo: entra como CLIENTE</strong>
+          <p>Entra como cliente. Puedes usar <code>adalvarez / Demo12345!</code>. Pega su token en Authorize.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: crear el vehículo</strong>
+          <p>En Swagger selecciona <strong>Vehículos</strong> y abre <code>POST /api/v1/vehiculos</code>.</p>
+          <pre><code>{
+  "tipo": "auto",
+  "datos": {
+    "placa": "ABC-1234",
+    "marca": "Toyota",
+    "modelo": "Corolla",
+    "color": "Gris",
+    "anio": 2022,
+    "clasificacion": "Gasolina",
+    "numeroPuertas": 4,
+    "capacidadMaletero": 470
+  }
+}</code></pre>
+          <p>Guarda el <code>id</code> devuelto como <code>vehicleId</code>.</p>
+        </div>
+        <div class="warn">No mandes <code>ownerId</code>. El dueño sale del token del CLIENTE.</div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-cliente">CLIENTE</span> Caso 6: asignar vehiculo a propietario</h3>
+        <div class="note">
+          <strong>Objetivo:</strong> dejar registrado oficialmente que ese vehículo pertenece a un cliente. Sin esto, Tickets no puede saber quién es el dueño.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso previo: tener un vehículo creado</strong>
+          <p>Primero haz el Caso 5 y guarda el <code>id</code> del vehículo.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: asignar el vehículo usando token CLIENTE</strong>
+          <p>En Swagger selecciona <strong>Asignaciones</strong> y abre <code>POST /api/v1/asignaciones</code>.</p>
+          <pre><code>{
+  "vehicleId": "ID_DEL_VEHICULO"
+}</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Opción alternativa: si estás como ADMIN</strong>
+          <pre><code>{
+  "userId": "ID_DEL_CLIENTE",
+  "vehicleId": "ID_DEL_VEHICULO"
+}</code></pre>
+        </div>
+        <div class="ok">Sin asignacion activa, Tickets no puede saber de quien es el vehiculo.</div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-recaudador">RECAUDADOR</span> Caso 7: registrar entrada con ticket</h3>
+        <div class="note">
+          <strong>Objetivo:</strong> registrar que un vehículo entra al parqueadero, ocupar el espacio y crear ticket <code>ACTIVO</code>.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso previo: entra como RECAUDADOR</strong>
+          <p>Entra como <code>rdrecaudador / Recaudador12345!</code> y pega su token en Authorize.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: buscar el vehículo por placa</strong>
+          <p>En Swagger selecciona <strong>Vehículos</strong> y abre <code>GET /api/v1/vehiculos/placa/{placa}</code>.</p>
+          <p>Prueba con una placa disponible del seed:</p>
+          <pre><code>PAC-0004</code></pre>
+          <p>Resultado esperado: te devuelve el vehículo. Si no existe, debe salir 404 en español.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 2: buscar un espacio disponible</strong>
+          <p>En Swagger selecciona <strong>Zonas</strong> y abre:</p>
+          <pre><code>GET /api/v1/espacios</code></pre>
+          <p>Busca un espacio con <code>"estado": "DISPONIBLE"</code> y copia su <code>id</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 3: emitir el ticket</strong>
+          <p>En Swagger selecciona <strong>Tickets</strong> y abre <code>POST /api/v1/tickets</code>.</p>
+          <pre><code>{
+  "idEspacio": "ID_DEL_ESPACIO_DISPONIBLE",
+  "placa": "PAC-0004"
+}</code></pre>
+          <p>Guarda el <code>id</code> del ticket. Debe quedar <code>ACTIVO</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 4: verificar ocupación del espacio</strong>
+          <p>Ejecuta <code>GET /api/v1/espacios</code>. El espacio debe quedar <code>OCUPADO</code>.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-recaudador">RECAUDADOR</span> Caso 8: registrar salida y cobrar</h3>
+        <div class="note">
+          <strong>Objetivo:</strong> cerrar la estadía, calcular el valor con mínimo de 30 minutos y liberar el espacio.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso previo: entra como RECAUDADOR</strong>
+          <p>Debe existir un ticket <code>ACTIVO</code>. Puedes usar uno creado en el Caso 7.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: buscar ticket activo</strong>
+          <p>En Swagger selecciona <strong>Tickets</strong> y ejecuta:</p>
+          <pre><code>GET /api/v1/tickets?estado=ACTIVO</code></pre>
+          <p>Busca el ticket activo y copia su <code>id</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 2: pagar el ticket</strong>
+          <p>Abre <code>PATCH /api/v1/tickets/{id}/pagar</code>.</p>
+          <p>Pega el ID en el path y ejecuta. No necesitas body.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 3: revisa la respuesta</strong>
+          <p>Debe quedar <code>PAGADO</code>, con <code>fechaHoraSalida</code> y <code>valorRecaudado</code>. El espacio vuelve a <code>DISPONIBLE</code>.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-recaudador">RECAUDADOR</span> Caso 9: demostración rápida: crear, listar y cobrar</h3>
+        <div class="note">
+          <strong>Objetivo:</strong> este es el flujo que puedes mostrar cuando te pidan literalmente “crear, cobrar y listar tickets”.
+          Usa un vehículo sin ticket activo y un espacio <code>DISPONIBLE</code>.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso previo: entrar como RECAUDADOR</strong>
+          <p>En Swagger selecciona <strong>Usuarios</strong>, abre login y entra con:</p>
+          <pre><code>{
+  "username": "rdrecaudador",
+  "password": "Recaudador12345!"
+}</code></pre>
+          <p>Copia solo el <code>accessToken</code>, presiona <strong>Authorize</strong> y pégalo.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: listar tickets antes de crear</strong>
+          <p>En Swagger selecciona <strong>Tickets</strong> y ejecuta:</p>
+          <pre><code>GET /api/v1/tickets</code></pre>
+          <p>Esto demuestra que el sistema puede listar tickets. También puedes usar:</p>
+          <pre><code>GET /api/v1/tickets?estado=ACTIVO</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 2: buscar datos para crear el ticket</strong>
+          <p>En <strong>Vehículos</strong>, busca la placa:</p>
+          <pre><code>GET /api/v1/vehiculos/placa/PAC-0004</code></pre>
+          <p>Luego en <strong>Zonas</strong>, lista espacios y copia un <code>id</code> con estado <code>DISPONIBLE</code>:</p>
+          <pre><code>GET /api/v1/espacios</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 3: crear ticket</strong>
+          <p>En <strong>Tickets</strong>, abre <code>POST /api/v1/tickets</code> y coloca:</p>
+          <pre><code>{
+  "idEspacio": "ID_DEL_ESPACIO_DISPONIBLE",
+  "placa": "PAC-0004"
+}</code></pre>
+          <p>Resultado esperado: estado <code>ACTIVO</code>. Copia el <code>id</code> del ticket creado.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 4: listar para comprobar que existe</strong>
+          <p>Ejecuta de nuevo:</p>
+          <pre><code>GET /api/v1/tickets?estado=ACTIVO</code></pre>
+          <p>Debe aparecer el ticket que acabas de crear.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 5: cobrar ticket</strong>
+          <p>En <strong>Tickets</strong>, abre <code>PATCH /api/v1/tickets/{id}/pagar</code>. En <code>id</code> pega el ID del ticket creado.</p>
+          <p>No pongas body. Solo presiona <strong>Execute</strong>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 6: listar para comprobar el cobro</strong>
+          <p>Ejecuta:</p>
+          <pre><code>GET /api/v1/tickets</code></pre>
+          <p>Resultado esperado: el ticket ahora debe salir con estado <code>PAGADO</code>, <code>fechaHoraSalida</code> y <code>valorRecaudado</code>.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-recaudador">RECAUDADOR</span> Caso 10: cancelar ticket</h3>
+        <div class="note">
+          <strong>Objetivo:</strong> anular una entrada creada por error, sin cobrar y liberando el espacio.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso previo: entra como RECAUDADOR y ten un ticket ACTIVO</strong>
+          <p>Si no tienes uno, crea un ticket con el Caso 7.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: cancelar el ticket</strong>
+          <p>En Swagger selecciona <strong>Tickets</strong> y abre <code>PATCH /api/v1/tickets/{id}/cancelar</code>.</p>
+          <p>Usa esto si el ticket fue un error o no corresponde cobrar. Solo funciona si esta <code>ACTIVO</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Resultado esperado</strong>
+          <p>Debe quedar <code>CANCELADO</code>, <code>valorRecaudado: 0.00</code> y espacio <code>DISPONIBLE</code>.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3><span class="pill role-cliente">CLIENTE</span> Caso 11: revisar lo propio</h3>
+        <div class="swagger-step">
+          <strong>Paso previo: login como CLIENTE</strong>
+          <p>Usa <code>adalvarez / Demo12345!</code> y pega su token en Authorize.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: endpoints que sí puede usar</strong>
+          <pre><code>GET /api/v1/vehiculos
+GET /api/v1/asignaciones
+GET /api/v1/tickets
+GET /api/v1/zonas
+GET /api/v1/espacios</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 2: endpoints que deben fallar con 403</strong>
+          <pre><code>POST /api/v1/zonas
+DELETE /api/v1/vehiculos/{id}
+PATCH /api/v1/tickets/{id}/pagar</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="validaciones">
+      <h2>8. Pruebas de validación para tener a mano</h2>
+      <p>
+        Usa estos casos cuando quieras demostrar que el backend valida placa, propietario, ticket activo,
+        espacio disponible y estados. Recomendado: haz login como <code>rdrecaudador / Recaudador12345!</code>
+        para tickets, y como <code>admin / Admin12345!</code> cuando necesites ver personas o cédulas.
+      </p>
+
+      <div class="usecase">
+        <h3>Validación 1: buscar vehículo por placa</h3>
+        <div class="note">
+          <strong>Previo requerido:</strong> iniciar sesión como <code>RECAUDADOR</code>, <code>ADMIN</code> o <code>ROOT</code> y pegar el <code>accessToken</code> en Authorize. Debe existir al menos un vehículo en la base. Con datos demo usa <code>PAC-0004</code>.
+        </div>
+        <div class="swagger-step">
+          <strong>Vehículos -> GET /api/v1/vehiculos/placa/{placa}</strong>
+          <p>Con token de RECAUDADOR, prueba una placa demo:</p>
+          <pre><code>PAC-0004</code></pre>
+          <p>Resultado esperado: devuelve el vehículo. Guarda su <code>id</code> si quieres emitir ticket por <code>idVehiculo</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Placa inexistente</strong>
+          <p>Prueba:</p>
+          <pre><code>ZZZ-9999</code></pre>
+          <p>Resultado esperado: <code>404</code> con mensaje de vehículo no encontrado.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3>Validación 2: si ingreso por cédula, listar vehículos del cliente</h3>
+        <div class="note">
+          <strong>Previo requerido:</strong> iniciar sesión como <code>ADMIN</code>. Debe existir un cliente con vehículos y asignaciones activas. Con datos demo puedes usar el cliente <code>adalvarez</code>.
+        </div>
+        <div class="warn">
+          Hoy el RECAUDADOR no tiene endpoint directo para buscar personas por cédula. En Swagger se valida con ADMIN:
+          primero encuentras la persona por DNI y luego consultas su flota.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: buscar la persona por cédula</strong>
+          <p>En Swagger selecciona <strong>Usuarios</strong>, abre el bloque de personas y ejecuta <code>GET /api/v1/personas</code>.</p>
+          <p>Con token ADMIN, busca en la lista la cédula en el campo <code>dni</code>. Copia <code>idUuid</code>.</p>
+          <p>Cliente demo útil: busca el registro de <code>adalvarez</code> o una cédula que hayas registrado.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 2: listar vehículos de esa persona</strong>
+          <p>En Swagger selecciona <strong>Asignaciones</strong> y abre <code>GET /api/v1/propietarios/{userId}/vehiculos</code>.</p>
+          <p>En <code>userId</code> pega el <code>idUuid</code> de la persona/usuario.</p>
+          <p>Resultado esperado: lista de vehículos de ese cliente.</p>
+        </div>
+        <div class="ok">
+          Regla mental: por <strong>placa</strong> encuentras un vehículo puntual; por <strong>cédula</strong> encuentras el cliente y luego su lista de vehículos.
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3>Validación 3: si ingreso por placa, el backend resuelve el propietario</h3>
+        <div class="note">
+          <strong>Previo requerido:</strong> iniciar sesión como <code>RECAUDADOR</code>. Debe existir un vehículo con asignación activa y un espacio <code>DISPONIBLE</code>. Con datos demo usa una placa disponible como <code>PAC-0004</code>.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso: emitir ticket desde el servicio Tickets</strong>
+          <p>En Swagger selecciona <strong>Tickets</strong> y abre <code>POST /api/v1/tickets</code>.</p>
+          <p>Con token RECAUDADOR, usa una placa disponible y un espacio DISPONIBLE:</p>
+          <pre><code>{
+  "idEspacio": "ID_DE_UN_ESPACIO_DISPONIBLE",
+  "placa": "PAC-0004"
+}</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Resultado esperado</strong>
+          <p>El ticket queda <code>ACTIVO</code> y la respuesta trae <code>idUsuario</code>. Ese <code>idUsuario</code> es el propietario resuelto desde la asignación activa del vehículo.</p>
+        </div>
+        <div class="warn">
+          La respuesta de ticket muestra <code>idUsuario</code>, no la cédula. Si necesitas ver la cédula en Swagger, entra como ADMIN y consulta <code>GET /api/v1/personas/{idUsuario}</code>.
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3>Validación 4: emitir ticket válido</h3>
+        <div class="note">
+          <strong>Previo requerido:</strong> iniciar sesión como <code>RECAUDADOR</code>. Debes tener una placa con propietario activo y sin ticket activo, más un espacio <code>DISPONIBLE</code>. Guarda antes el <code>idEspacio</code> desde <code>GET /api/v1/espacios</code>.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 1: buscar espacio disponible</strong>
+          <p>En Swagger selecciona <strong>Zonas</strong> y ejecuta <code>GET /api/v1/espacios</code>.</p>
+          <p>Copia un espacio con <code>estado: DISPONIBLE</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 2: emitir ticket desde Tickets</strong>
+          <p>En Swagger selecciona <strong>Tickets</strong> y abre <code>POST /api/v1/tickets</code>.</p>
+          <pre><code>{
+  "idEspacio": "ID_DEL_ESPACIO_DISPONIBLE",
+  "placa": "PAC-0004"
+}</code></pre>
+          <p>Guarda el <code>id</code> del ticket, el <code>idEspacio</code> y la placa usada.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>3. Confirmar ocupación</strong>
+          <p>Ejecuta <code>GET /api/v1/espacios</code>. El espacio usado debe quedar <code>OCUPADO</code>.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3>Validación 5: intentar emitir otro ticket con el mismo vehículo</h3>
+        <div class="note">
+          <strong>Previo requerido:</strong> primero ejecuta la Validación 4 y deja el ticket en estado <code>ACTIVO</code>. No pagues ni canceles todavía. Necesitas la misma placa usada en ese ticket.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso: intentar emitir otro ticket</strong>
+          <p>En Swagger selecciona <strong>Tickets</strong> y abre <code>POST /api/v1/tickets</code>.</p>
+          <p>Usa la misma placa del ticket activo, aunque cambies el espacio:</p>
+          <pre><code>{
+  "idEspacio": "OTRO_ESPACIO_DISPONIBLE",
+  "placa": "PAC-0004"
+}</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Resultado esperado</strong>
+          <p>Debe responder <code>409</code>: el vehículo ya tiene un ticket activo.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3>Validación 6: intentar usar el mismo espacio ocupado con otro vehículo</h3>
+        <div class="note">
+          <strong>Previo requerido:</strong> primero ejecuta la Validación 4 para ocupar un espacio. Debes guardar ese <code>idEspacio</code> ocupado y tener otra placa disponible con asignación activa, por ejemplo <code>PAD-0005</code>.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso: intentar ocupar el mismo espacio</strong>
+          <p>En Swagger selecciona <strong>Tickets</strong> y abre <code>POST /api/v1/tickets</code>.</p>
+          <p>Usa el mismo <code>idEspacio</code> que quedó OCUPADO, pero otra placa disponible, por ejemplo:</p>
+          <pre><code>{
+  "idEspacio": "MISMO_ESPACIO_OCUPADO",
+  "placa": "PAD-0005"
+}</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Resultado esperado</strong>
+          <p>Debe responder <code>409</code>: el espacio no está disponible. Esta prueba valida la ocupación del espacio.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3>Validación 7: pagar ticket y liberar espacio</h3>
+        <div class="note">
+          <strong>Previo requerido:</strong> debe existir un ticket <code>ACTIVO</code>. Puedes usar el ticket creado en la Validación 4. Guarda su <code>id</code> y el <code>idEspacio</code> para verificar que se libere.
+        </div>
+        <div class="swagger-step">
+          <strong>Paso: pagar el ticket activo</strong>
+          <p>En Swagger selecciona <strong>Tickets</strong> y abre <code>PATCH /api/v1/tickets/{id}/pagar</code>.</p>
+          <p>Usa el <code>id</code> del ticket ACTIVO que emitiste.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Resultado esperado</strong>
+          <p>El ticket queda <code>PAGADO</code>, aparece <code>valorRecaudado</code> y el espacio vuelve a <code>DISPONIBLE</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Prueba extra</strong>
+          <p>Intenta pagar el mismo ticket otra vez. Debe responder <code>409</code> porque ya no está activo.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3>Validación 8: cancelar ticket y liberar espacio</h3>
+        <div class="note">
+          <strong>Previo requerido:</strong> crea un ticket nuevo y déjalo <code>ACTIVO</code>. Usa una placa que no tenga otro ticket activo y un espacio <code>DISPONIBLE</code>. No uses un ticket ya pagado o cancelado.
+        </div>
+        <div class="swagger-step">
+          <strong>1. Crea otro ticket ACTIVO</strong>
+          <p>Usa otra placa disponible y otro espacio DISPONIBLE.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Paso 2: cancelar el ticket activo</strong>
+          <p>En Swagger selecciona <strong>Tickets</strong> y abre <code>PATCH /api/v1/tickets/{id}/cancelar</code>.</p>
+          <p>Usa el <code>id</code> del ticket recién creado.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>Resultado esperado</strong>
+          <p>El ticket queda <code>CANCELADO</code>, <code>valorRecaudado</code> queda en <code>0.00</code> y el espacio vuelve a <code>DISPONIBLE</code>.</p>
+        </div>
+      </div>
+
+      <div class="usecase">
+        <h3>Validación 9: vehículo sin propietario activo</h3>
+        <div class="note">
+          <strong>Previo requerido:</strong> crear un vehículo nuevo, pero no crearle asignación en <code>/api/v1/asignaciones</code>. Luego iniciar sesión como <code>RECAUDADOR</code> y usar un espacio <code>DISPONIBLE</code>.
+        </div>
+        <div class="swagger-step">
+          <strong>1. Como CLIENTE o ADMIN, crea un vehículo nuevo</strong>
+          <p>No crees asignación en <code>/api/v1/asignaciones</code>.</p>
+        </div>
+        <div class="swagger-step">
+          <strong>2. Como RECAUDADOR, intenta emitir ticket con esa placa</strong>
+          <pre><code>{
+  "idEspacio": "ID_DE_ESPACIO_DISPONIBLE",
+  "placa": "PLACA_SIN_ASIGNACION"
+}</code></pre>
+        </div>
+        <div class="swagger-step">
+          <strong>Resultado esperado</strong>
+          <p>Debe responder que el vehículo no tiene propietario activo asignado. Esta prueba valida asignaciones.</p>
+        </div>
+      </div>
+
+      <div class="note">
+        Datos demo útiles: <code>PAB-0001</code> ya tiene ticket ACTIVO, <code>PAC-0004</code> está disponible para probar,
+        y puedes buscar espacios disponibles con <code>GET /api/v1/espacios</code>.
+      </div>
+    </section>
+
+    <section id="usuarios">
+      <h2>9. Usuarios: qué usar y cuándo</h2>
+      <h3>Para iniciar todo</h3>
+      <p>Usa <code>POST /api/v1/auth/login</code> con admin.</p>
+
+      <h3>Para crear un cliente</h3>
+      <p>Usa <code>POST /api/v1/auth/register</code>. Este endpoint crea rol <code>CLIENTE</code>.</p>
+      <pre><code>{
+  "persona": {
+    "dni": "1712345678",
+    "firstName": "Juan",
+    "lastName": "Perez",
+    "email": "juan@example.com",
+    "phone": "0999999999"
+  },
+  "password": "Demo12345!"
+}</code></pre>
+
+      <h3>Para crear un recaudador</h3>
+      <ol>
+        <li>Consulta roles con <code>GET /api/v1/roles</code>.</li>
+        <li>Busca el ID del rol <code>RECAUDADOR</code>.</li>
+        <li>Crea usuario con <code>POST /api/v1/usuarios</code> o usa uno existente.</li>
+        <li>Asigna rol con <code>POST /api/v1/usuarios/{userId}/roles/{roleId}</code>.</li>
+      </ol>
+
+      <div class="warn">
+        No uses <code>root-controller</code> para pruebas normales. Es para borrado físico y requiere rol ROOT.
+      </div>
+    </section>
+
+    <section id="zonas">
+      <h2>10. Zonas y espacios</h2>
+      <h3>Crear zona</h3>
+      <pre><code>POST /api/v1/zonas</code></pre>
+      <pre><code>{
+  "nombre": "Zona Norte",
+  "descripcion": "Zona principal",
+  "tipo": "REGULAR",
+  "capacidad": 20
+}</code></pre>
+
+      <h3>Crear espacio</h3>
+      <pre><code>POST /api/v1/espacios</code></pre>
+      <pre><code>{
+  "codigo": "A-001",
+  "idZona": "ID_DE_LA_ZONA",
+  "descripcion": "Espacio para auto",
+  "tipo": "AUTO",
+  "capacidad": 1,
+  "estado": "DISPONIBLE"
+}</code></pre>
+
+      <p>Para tickets, el espacio debe estar <code>DISPONIBLE</code>. Si está <code>OCUPADO</code>, <code>RESERVADO</code> o <code>FUERA_DE_SERVICIO</code>, tickets rechazará la entrada.</p>
+    </section>
+
+    <section id="vehiculos">
+      <h2>11. Vehículos</h2>
+      <h3>Crear vehículo</h3>
+      <pre><code>POST /api/v1/vehiculos</code></pre>
+      <pre><code>{
+  "tipo": "auto",
+  "datos": {
+    "placa": "ABC-1234",
+    "marca": "Toyota",
+    "modelo": "Corolla",
+    "color": "Gris",
+    "anio": 2022,
+    "clasificacion": "Gasolina",
+    "numeroPuertas": 4,
+    "capacidadMaletero": 470
+  }
+}</code></pre>
+
+      <h3>Buscar por placa</h3>
+      <pre><code>GET /api/v1/vehiculos/placa/ABC-1234</code></pre>
+      <p>Esto es útil para el recaudador cuando llega un vehículo a la puerta.</p>
+    </section>
+
+    <section id="asignaciones">
+      <h2>12. Asignaciones</h2>
+      <p>Una asignación dice quién es el propietario activo de un vehículo. Tickets necesita esto para saber a qué cliente pertenece el ticket.</p>
+
+      <h3>Si estás como CLIENTE</h3>
+      <pre><code>POST /api/v1/asignaciones</code></pre>
+      <pre><code>{
+  "vehicleId": "ID_DEL_VEHICULO"
+}</code></pre>
+
+      <h3>Si estás como ADMIN</h3>
+      <pre><code>{
+  "userId": "ID_DEL_CLIENTE",
+  "vehicleId": "ID_DEL_VEHICULO"
+}</code></pre>
+
+      <div class="warn">
+        Si intentas crear un ticket sin asignación activa, tickets responderá que el vehículo no tiene propietario activo.
+      </div>
+    </section>
+
+    <section id="tickets">
+      <h2>13. Tickets</h2>
+      <h3>Crear ticket de entrada</h3>
+      <pre><code>POST /api/v1/tickets</code></pre>
+      <p>Por placa:</p>
+      <pre><code>{
+  "idEspacio": "ID_DEL_ESPACIO",
+  "placa": "ABC-1234"
+}</code></pre>
+      <p>Por ID de vehículo:</p>
+      <pre><code>{
+  "idEspacio": "ID_DEL_ESPACIO",
+  "idVehiculo": "ID_DEL_VEHICULO"
+}</code></pre>
+
+      <p>Al crear el ticket:</p>
+      <ul>
+        <li>El ticket queda <code>ACTIVO</code>.</li>
+        <li>El espacio pasa a <code>OCUPADO</code>.</li>
+        <li>No se permite otro ticket activo para el mismo vehículo.</li>
+      </ul>
+
+      <h3>Pagar salida</h3>
+      <pre><code>PATCH /api/v1/tickets/{id}/pagar</code></pre>
+      <p>Al pagar:</p>
+      <ul>
+        <li>El ticket pasa a <code>PAGADO</code>.</li>
+        <li>Se calcula <code>valorRecaudado</code>.</li>
+        <li>El espacio vuelve a <code>DISPONIBLE</code>.</li>
+      </ul>
+
+      <h3>Cancelar</h3>
+      <pre><code>PATCH /api/v1/tickets/{id}/cancelar</code></pre>
+      <p>Al cancelar:</p>
+      <ul>
+        <li>El ticket pasa a <code>CANCELADO</code>.</li>
+        <li><code>valorRecaudado</code> queda en 0.</li>
+        <li>El espacio vuelve a <code>DISPONIBLE</code>.</li>
+      </ul>
+
+      <h3>Fórmula de cobro</h3>
+      <pre><code>minutosCobrados = max(30, minutosEntreIngresoYSalida)
+valor = (minutosCobrados / 60) * tarifaTipoVehiculo * factorTipoEspacio</code></pre>
+    </section>
+
+    <section id="decisiones">
+      <h2>14. Si tienes dos caminos</h2>
+      <table>
+        <thead>
+          <tr><th>Situación</th><th>Camino recomendado</th><th>Alternativa</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Necesitas probar rápido.</td>
+            <td>Login como ADMIN y crea datos base.</td>
+            <td>Crear usuarios reales con roles separados.</td>
+          </tr>
+          <tr>
+            <td>Crear ticket.</td>
+            <td>Usar placa, porque es lo natural en puerta.</td>
+            <td>Usar idVehiculo si ya lo tienes desde Swagger.</td>
+          </tr>
+          <tr>
+            <td>Vehículo sale normalmente.</td>
+            <td><code>PATCH /tickets/{id}/pagar</code>.</td>
+            <td>Cancelar solo si la operación fue error o no debe cobrarse.</td>
+          </tr>
+          <tr>
+            <td>Espacio aparece ocupado.</td>
+            <td>Revisar si hay ticket ACTIVO.</td>
+            <td>Como ADMIN, cambiar estado del espacio si quedó inconsistente.</td>
+          </tr>
+          <tr>
+            <td>Cambiaste código.</td>
+            <td><code>docker compose up -d --build servicio</code>.</td>
+            <td>Reconstruir todo con <code>docker compose up -d --build</code>.</td>
+          </tr>
+          <tr>
+            <td>Datos quedaron mal.</td>
+            <td>Corregir desde Swagger si es posible.</td>
+            <td><code>docker compose down -v</code> para borrar bases y empezar de cero.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="errores">
+      <h2>15. Errores comunes</h2>
+      <table>
+        <thead>
+          <tr><th>Error</th><th>Qué significa</th><th>Qué hacer</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>401</code></td>
+            <td>No enviaste token, expiró o está mal pegado. Si el mensaje dice <code>Bad token</code>, lo respondió Kong antes del backend.</td>
+            <td>Haz login otra vez y pega solo el <code>accessToken</code> en Authorize. No pegues <code>Bearer</code>, comillas, JSON completo ni <code>refreshToken</code>.</td>
+          </tr>
+          <tr>
+            <td><code>403</code></td>
+            <td>Tu rol no tiene permiso.</td>
+            <td>Revisa si estás como CLIENTE, RECAUDADOR o ADMIN según el endpoint.</td>
+          </tr>
+          <tr>
+            <td><code>404</code></td>
+            <td>No existe el recurso o el cliente no puede verlo.</td>
+            <td>Verifica IDs y que el recurso pertenezca al usuario correcto.</td>
+          </tr>
+          <tr>
+            <td><code>409</code></td>
+            <td>Conflicto de negocio.</td>
+            <td>Puede ser ticket activo duplicado, placa repetida o espacio no disponible.</td>
+          </tr>
+          <tr>
+            <td>Kong no muestra Tickets</td>
+            <td>Kong no recargó su configuración.</td>
+            <td>Ejecuta <code>bash scripts/bootstrap.sh</code> y luego <code>docker compose restart kong</code>.</td>
+          </tr>
+          <tr>
+            <td>Servicios no están healthy</td>
+            <td>Algún backend sigue arrancando o falló.</td>
+            <td>Usa <code>docker compose logs -f --tail=100 servicio</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="comandos">
+      <h2>16. Comandos clave</h2>
+      <h3>Preparar secretos y Kong</h3>
+      <pre><code>bash scripts/bootstrap.sh</code></pre>
+
+      <h3>Levantar todo</h3>
+      <pre><code>docker compose up -d --build</code></pre>
+
+      <h3>Reconstruir solo tickets</h3>
+      <pre><code>docker compose up -d --build tickets</code></pre>
+
+      <h3>Ver estado</h3>
+      <pre><code>docker compose ps</code></pre>
+
+      <h3>Ver logs</h3>
+      <pre><code>docker compose logs -f --tail=100</code></pre>
+
+      <h3>Apagar sin borrar bases</h3>
+      <pre><code>docker compose down</code></pre>
+
+      <h3>Empezar desde cero borrando bases</h3>
+      <pre><code>docker compose down -v
+docker compose up -d --build</code></pre>
+
+      <div class="ok">
+        Ruta diaria recomendada: abrir Swagger centralizado, hacer login en Usuarios, Authorize, crear datos base y operar Tickets.
+      </div>
+</section>
+  </main>
+</div>
+<script>
+  function buildTabs(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+
+    const panels = Array.from(section.querySelectorAll(":scope > .usecase"));
+    if (!panels.length) return;
+
+    const tabs = document.createElement("div");
+    tabs.className = "tabs";
+
+    const buttons = document.createElement("div");
+    buttons.className = "tab-buttons";
+
+    panels.forEach((panel, index) => {
+      const heading = panel.querySelector("h3");
+      const label = heading ? heading.textContent.trim() : `Caso ${index + 1}`;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `tab-button${index === 0 ? " active" : ""}`;
+      button.textContent = label;
+      button.setAttribute("aria-controls", `${sectionId}-tab-${index + 1}`);
+
+      panel.id = `${sectionId}-tab-${index + 1}`;
+      panel.classList.add("tab-panel");
+      if (index === 0) panel.classList.add("active");
+
+      button.addEventListener("click", () => {
+        buttons.querySelectorAll(".tab-button").forEach(item => item.classList.remove("active"));
+        panels.forEach(item => item.classList.remove("active"));
+        button.classList.add("active");
+        panel.classList.add("active");
+      });
+
+      buttons.appendChild(button);
+    });
+
+    tabs.appendChild(buttons);
+    section.insertBefore(tabs, panels[0]);
+  }
+
+  buildTabs("casos");
+  buildTabs("validaciones");
+  buildTabs("login-roles");
+
+  const sectionIds = Array.from(document.querySelectorAll("main > section")).map(section => section.id);
+  const navLinks = Array.from(document.querySelectorAll("aside nav a"));
+
+  function showSection(sectionId, updateHash = true) {
+    const targetId = sectionIds.includes(sectionId) ? sectionId : "casos";
+
+    document.querySelectorAll("main > section").forEach(section => {
+      section.classList.toggle("active-section", section.id === targetId);
+    });
+
+    navLinks.forEach(link => {
+      link.classList.toggle("active-nav", link.getAttribute("href") === `#${targetId}`);
+    });
+
+    if (updateHash) {
+      history.replaceState(null, "", `#${targetId}`);
+    }
+
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  document.addEventListener("click", event => {
+    const link = event.target.closest('a[href^="#"]');
+    if (!link) return;
+
+    const sectionId = link.getAttribute("href").slice(1);
+    if (!sectionIds.includes(sectionId)) return;
+
+    event.preventDefault();
+    showSection(sectionId);
+  });
+
+  showSection(location.hash ? location.hash.slice(1) : "casos", false);
+</script>
+</body>
+</html>

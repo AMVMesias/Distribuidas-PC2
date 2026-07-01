@@ -27,11 +27,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Zona {
 
-    /*
-     * CÓDIGO DE TICKET:
-     * TICK-AV1-23-20260520-104237
-     */
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;

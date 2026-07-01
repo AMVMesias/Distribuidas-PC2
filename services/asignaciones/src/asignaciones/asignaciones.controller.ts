@@ -35,13 +35,13 @@ export class AsignacionesController {
   @ApiOperation({
     summary: 'Crear o reactivar asignación vehículo-propietario',
     description:
-      'USER puede asignar vehículos únicamente a su propio usuario. ADMIN puede indicar userId y asignar vehículos a cualquier propietario activo.',
+      'CLIENTE puede asignar vehículos únicamente a su propio usuario. ADMIN puede indicar userId y asignar vehículos a cualquier propietario activo.',
   })
   @ApiBody({
     type: CreateAssignmentDto,
     examples: {
       user: {
-        summary: 'USER se asigna un vehículo',
+        summary: 'CLIENTE se asigna un vehículo',
         value: { vehicleId: 'd72f78e1-f3de-4a8f-91f4-568c2cb9b316' },
       },
       admin: {
@@ -56,7 +56,7 @@ export class AsignacionesController {
   @ApiResponse({ status: 201, description: 'Asignación creada o reactivada', type: AssignmentResponseDto })
   @ApiResponse({ status: 400, description: 'Solicitud inválida o propietario inactivo' })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
-  @ApiResponse({ status: 403, description: 'USER intentando operar sobre otro propietario' })
+  @ApiResponse({ status: 403, description: 'CLIENTE intentando operar sobre otro propietario' })
   @ApiResponse({ status: 404, description: 'Usuario o vehículo no encontrado' })
   @ApiResponse({ status: 409, description: 'El vehículo ya tiene una asignación activa' })
   create(
@@ -70,11 +70,11 @@ export class AsignacionesController {
   @Get('asignaciones')
   @ApiOperation({
     summary: 'Listar asignaciones',
-    description: 'USER lista únicamente sus asignaciones. ADMIN puede listar todas y filtrar por userId, vehicleId o status.',
+    description: 'CLIENTE lista únicamente sus asignaciones. ADMIN puede listar todas y filtrar por userId, vehicleId o status.',
   })
   @ApiResponse({ status: 200, description: 'Listado de asignaciones', type: [AssignmentResponseDto] })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
-  @ApiResponse({ status: 403, description: 'USER intentando consultar otro propietario' })
+  @ApiResponse({ status: 403, description: 'CLIENTE intentando consultar otro propietario' })
   findAll(@Query() query: ListAssignmentsQueryDto, @Req() req: AuthenticatedRequest) {
     return this.service.findAll(query, req.user);
   }
@@ -94,11 +94,11 @@ export class AsignacionesController {
   @Delete('asignaciones/:userId/:vehicleId')
   @ApiOperation({
     summary: 'Eliminar lógicamente una asignación',
-    description: 'USER solo elimina asignaciones propias. ADMIN puede eliminar cualquier asignación activa. No borra histórico.',
+    description: 'CLIENTE solo elimina asignaciones propias. ADMIN puede eliminar cualquier asignación activa. No borra histórico.',
   })
   @ApiResponse({ status: 200, description: 'Asignación marcada como INACTIVE', type: AssignmentResponseDto })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
-  @ApiResponse({ status: 403, description: 'USER intentando eliminar asignación ajena' })
+  @ApiResponse({ status: 403, description: 'CLIENTE intentando eliminar asignación ajena' })
   @ApiResponse({ status: 404, description: 'Asignación activa no encontrada' })
   remove(
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -142,11 +142,11 @@ export class AsignacionesController {
   @ApiOperation({
     summary: 'Consultar flota agregada por propietario',
     description:
-      'USER solo consulta su propia flota. ADMIN puede consultar cualquier propietario. Agrega tipo y categoría desde el servicio de vehículos.',
+      'CLIENTE solo consulta su propia flota. ADMIN puede consultar cualquier propietario. Agrega tipo y categoría desde el servicio de vehículos.',
   })
   @ApiResponse({ status: 200, description: 'Flota agregada del propietario', type: FleetResponseDto })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
-  @ApiResponse({ status: 403, description: 'USER intentando consultar otra flota' })
+  @ApiResponse({ status: 403, description: 'CLIENTE intentando consultar otra flota' })
   @ApiResponse({ status: 404, description: 'Propietario o vehículo no encontrado' })
   findFleet(@Param('userId', ParseUUIDPipe) userId: string, @Req() req: AuthenticatedRequest) {
     return this.service.findFleet(userId, req.user);

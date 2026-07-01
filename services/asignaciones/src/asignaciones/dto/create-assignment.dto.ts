@@ -4,7 +4,7 @@ import { IsOptional, IsUUID } from 'class-validator';
 export class CreateAssignmentDto {
   @ApiPropertyOptional({
     format: 'uuid',
-    description: 'Solo ADMIN puede indicar userId. USER siempre usa el sub del JWT.',
+    description: 'Solo ADMIN puede indicar userId. CLIENTE siempre usa el sub del JWT.',
   })
   @IsOptional()
   @IsUUID()

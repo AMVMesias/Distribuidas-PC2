@@ -271,9 +271,11 @@ code, pre, .mono { font-family: var(--mono); }
   white-space: nowrap;
 }
 .badge[data-p="public"] { color: var(--info); border-color: var(--info); }
-.badge[data-p="USER"]   { color: var(--primary); border-color: var(--primary); }
+.badge[data-p="CLIENTE"]   { color: var(--primary); border-color: var(--primary); }
 .badge[data-p="ADMIN"]  { color: var(--warning); border-color: var(--warning); }
-.badge[data-p="USER/ADMIN"] { color: var(--success); border-color: var(--success); }
+.badge[data-p="CLIENTE/ADMIN"] { color: var(--success); border-color: var(--success); }
+.badge[data-p="CLIENTE/RECAUDADOR/ADMIN"],
+.badge[data-p="RECAUDADOR/ADMIN"] { color: var(--success); border-color: var(--success); }
 
 .card__desc { margin: 0; color: var(--text-muted); font-size: 13px; }
 

@@ -39,26 +39,26 @@
 
 ## Resumen
 
-Plataforma distribuida de gestión de parking con cuatro microservicios independientes, protegidos por **Kong Gateway** como único punto de entrada. La autenticación se realiza con **JWT RS256** (access tokens de 15 min) y **refresh tokens opacos rotativos** (7 días). Cada servicio usa su propia base de datos PostgreSQL y se comunica con los demás sólo a través de canales internos autenticados.
+Plataforma distribuida de gestión de parking con cinco microservicios independientes, protegidos por **Kong Gateway** como único punto de entrada. La autenticación se realiza con **JWT RS256** (access tokens de 15 min) y **refresh tokens opacos rotativos** (7 días). Cada servicio usa su propia base de datos PostgreSQL y se comunica con los demás sólo a través de canales internos autenticados.
 
 | Punto de acceso | URL | Visible desde | Notas |
 |---|---|---|---|
-| **Swagger UI centralizado (los 4 servicios)** | **<http://localhost:8000/asignaciones/swagger-ui>** | Host / navegador | **Forma recomendada de explorar y probar la API.** |
+| **Swagger UI centralizado (los 5 servicios)** | **<http://localhost:8000/asignaciones/swagger-ui>** | Host / navegador | **Forma recomendada de explorar y probar la API.** |
 | API Gateway (Kong) | `http://localhost:8000` | Host / navegador | Único punto de entrada de la API. |
 | Cliente web de pruebas | `http://localhost:9000` | Host / navegador | Formularios dinámicos, inspector JWT, historial. |
 | Backends, Postgres, Kong Admin | — | Red interna Docker | No expuestos al host. |
 
-> La plataforma expone **OpenAPI 3** para los cuatro servicios. El servicio `asignaciones` publica un Swagger UI que agrega las cuatro specs en una sola URL. Úsalo como punto de partida; Postman queda relegado a casos puntuales (ver [Documentación interactiva](#-documentación-interactiva)).
+> La plataforma expone **OpenAPI 3** para los cinco servicios. El servicio `asignaciones` publica un Swagger UI que agrega las specs en una sola URL. Úsalo como punto de partida; Postman queda relegado a casos puntuales (ver [Documentación interactiva](#-documentación-interactiva)).
 
 ---
 
 ## Características
 
 - **API Gateway único** con Kong 3.9 en modo *DB-less* y configuración declarativa.
-- **Cuatro microservicios** con tecnologías heterogéneas (Spring Boot + NestJS) comunicándose por HTTP interno.
+- **Cinco microservicios** con tecnologías heterogéneas (Spring Boot + NestJS) comunicándose por HTTP interno.
 - **Autenticación JWT RS256** con par de claves generado en el bootstrap.
 - **Refresh tokens opacos** con rotación y revocación por familia (detección de reuso).
-- **RBAC** con dos roles: `USER` y `ADMIN`. Los servicios validan el token y aplican permisos de negocio.
+- **RBAC** con roles `CLIENTE`, `RECAUDADOR`, `ADMIN` y `ROOT`. Los servicios validan el token y aplican permisos de negocio.
 - **Rate limiting** diferenciado en Kong: login 10/min, registro 5/h, refresh 30/min, autenticados 100/min.
 - **CORS, `X-Request-ID` y correlación de peticiones** configurados como plugin global.
 - **Auditoría de asignaciones** con snapshot del estado anterior y nuevo en cada cambio.
@@ -90,6 +90,7 @@ flowchart LR
         Zonas["zonas · Spring Boot :8080"]
         Vehiculos["vehiculos · NestJS :3000"]
         Asignaciones["asignaciones · NestJS :3000"]
+        Tickets["tickets · NestJS :3000"]
     end
 
     subgraph DB["Docker · redes internas sin acceso externo"]
@@ -97,6 +98,7 @@ flowchart LR
         DbZ[("PostgreSQL 16 zonas-db")]
         DbV[("PostgreSQL 16 vehiculos-db")]
         DbA[("PostgreSQL 16 asignaciones-db")]
+        DbT[("PostgreSQL 16 tickets-db")]
     end
 
     Swagger --> Kong
@@ -106,12 +108,17 @@ flowchart LR
     Kong -->|JWT| Zonas
     Kong -->|JWT| Vehiculos
     Kong -->|JWT| Asignaciones
+    Kong -->|JWT| Tickets
     Usuarios -.->|X-Internal-Service-Token| Asignaciones
     Vehiculos -.->|X-Internal-Service-Token| Asignaciones
+    Tickets -.->|X-Internal-Service-Token| Vehiculos
+    Tickets -.->|X-Internal-Service-Token| Asignaciones
+    Tickets -.->|X-Internal-Service-Token| Zonas
     Usuarios --> DbU
     Zonas --> DbZ
     Vehiculos --> DbV
     Asignaciones --> DbA
+    Tickets --> DbT
 ```
 
 ### Flujo de autenticación
@@ -146,6 +153,7 @@ sequenceDiagram
 | `zonas` | Spring Boot 4.0 | 8080 | Postgres 16 | Zonas de parking y sus espacios. |
 | `vehiculos` | NestJS 11 | 3000 | Postgres 16 | Vehículos por dueño. `ownerId` desde `sub` del JWT. |
 | `asignaciones` | NestJS 11 | 3000 | Postgres 16 | Propiedad vehículo-propietario y auditoría. |
+| `tickets` | NestJS 11 | 3000 | Postgres 16 | Emisión, pago y cancelación de tickets de parqueadero. |
 
 ---
 
@@ -157,7 +165,7 @@ sequenceDiagram
 | Auth | Spring Security + JJWT (RS256) + refresh tokens opacos con hash |
 | Backend Java | Java 25, Spring Boot 4.x, Spring Data JPA, Hibernate, Flyway |
 | Backend Node | Node 22, NestJS 11, TypeORM, Passport JWT, class-validator |
-| Persistencia | PostgreSQL 18 (usuarios) y PostgreSQL 16 (zonas, vehículos, asignaciones) |
+| Persistencia | PostgreSQL 18 (usuarios) y PostgreSQL 16 (zonas, vehículos, asignaciones, tickets) |
 | Cliente web | HTML + CSS + JS vanilla (sin build), servido por Node `http` |
 | API docs | springdoc-openapi (Spring) y `@nestjs/swagger` (NestJS), expuestas por Kong |
 | Observabilidad | Health checks por servicio + healthcheck de Kong |
@@ -213,13 +221,14 @@ cd Distribuidas-PC2
 El repositorio incluye una plantilla `.env.example`. El bootstrap la copiará a `.env` automáticamente si no existe. **Revisa y ajusta las credenciales antes de arrancar:**
 
 ```ini
-# PostgreSQL (usado por los 4 servicios)
+# PostgreSQL (usado por los 5 servicios)
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 USUARIOS_DB=usuarios
 ZONAS_DB=zonas
 VEHICULOS_DB=gestion_vehiculos
 ASIGNACIONES_DB=asignaciones
+TICKETS_DB=tickets
 
 # JWT
 JWT_ISSUER=gateway-distribuidas
@@ -229,6 +238,15 @@ JWT_REFRESH_DAYS=7
 
 # Token interno para llamadas service-to-service dentro de Docker
 INTERNAL_SERVICE_TOKEN=change-me-internal-token
+
+# Tarifas por hora y factores de espacio para tickets
+TICKET_RATE_MOTO=0.50
+TICKET_RATE_AUTO=1.00
+TICKET_RATE_CAMIONETA=1.25
+TICKET_RATE_BUS=2.00
+TICKET_SPACE_FACTOR_MOTO=1.00
+TICKET_SPACE_FACTOR_AUTO=1.00
+TICKET_SPACE_FACTOR_BUS=1.50
 
 # Administrador inicial (se crea en el primer arranque del servicio `usuarios`)
 ADMIN_USERNAME=admin
@@ -276,7 +294,7 @@ Espera a que **todos los healthchecks** pasen:
 wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && docker compose ps"
 ```
 
-El estado correcto es `running (healthy)` para `usuarios`, `zonas`, `vehiculos`, `asignaciones`, `kong` y `web`. Si algún servicio queda en `(health: starting)` o `(unhealthy)`, revisa los logs de ese servicio.
+El estado correcto es `running (healthy)` para `usuarios`, `zonas`, `vehiculos`, `asignaciones`, `tickets`, `kong` y `web`. Si algún servicio queda en `(health: starting)` o `(unhealthy)`, revisa los logs de ese servicio.
 
 ### 4. Probar la API
 
@@ -297,7 +315,7 @@ curl http://localhost:8000/api/v1/auth/me \
 
 | Herramienta | URL |
 |---|---|
-| **Swagger UI centralizado** (los 4 servicios) | **<http://localhost:8000/asignaciones/swagger-ui>** |
+| **Swagger UI centralizado** (los 5 servicios) | **<http://localhost:8000/asignaciones/swagger-ui>** |
 | Cliente web de pruebas | <http://localhost:9000> |
 
 En el **Swagger UI centralizado** selecciona la spec del servicio en el desplegable superior derecho. Pulsa **Authorize** y pega el `accessToken` del paso 4 para probar las rutas protegidas.
@@ -324,8 +342,9 @@ El directorio [`web/`](./web) contiene una aplicación HTML/CSS/JS **standalone*
 | **Autenticación** | `register`, `login`, `refresh`, `logout`, `me`. Login y registro guardan la sesión automáticamente. |
 | **JWT Inspector** | Decodifica el access token, muestra header, payload, claims clave y expiración. |
 | **Usuarios / Personas / Roles** | CRUD completo (sólo ADMIN). |
-| **Zonas / Espacios** | Lectura para USER, escritura para ADMIN. |
-| **Vehículos** | USER opera los propios; ADMIN opera todos. El `ownerId` se toma del JWT. |
+| **Zonas / Espacios** | Lectura para CLIENTE y RECAUDADOR, escritura para ADMIN. |
+| **Vehículos** | CLIENTE opera los propios; RECAUDADOR consulta; ADMIN opera todos. |
+| **Tickets** | RECAUDADOR registra entrada/salida; CLIENTE consulta los propios; ADMIN consulta todo. |
 | **Documentación API** | Estado en vivo de los Swagger UI y enlaces directos. |
 | **Historial** | Últimas 50 peticiones con request, response, status y tiempo. |
 | **Ayuda** | Errores comunes (401/403/429) y preguntas frecuentes. |
@@ -348,11 +367,11 @@ El directorio [`web/`](./web) contiene una aplicación HTML/CSS/JS **standalone*
 
 | Método | Ruta | Permiso | Notas |
 |---|---|---|---|
-| `POST` | `/api/v1/auth/register` | Pública | Crea siempre un `USER`. Devuelve sesión completa. Rate limit: 5/h por IP. |
+| `POST` | `/api/v1/auth/register` | Pública | Crea siempre un `CLIENTE`. Devuelve sesión completa. Rate limit: 5/h por IP. |
 | `POST` | `/api/v1/auth/login` | Pública | Devuelve `accessToken` (JWT 15 m) + `refreshToken` (opaco 7 d). Rate limit: 10/min por IP. |
 | `POST` | `/api/v1/auth/refresh` | Pública | Rota el refresh token. Reusar uno ya rotado revoca toda la familia. Rate limit: 30/min por IP. |
 | `POST` | `/api/v1/auth/logout` | Pública | Revoca el refresh token presentado. |
-| `GET`  | `/api/v1/auth/me` | `USER` / `ADMIN` | Devuelve el usuario autenticado. |
+| `GET`  | `/api/v1/auth/me` | Usuario autenticado | Devuelve el usuario autenticado. |
 
 ### Usuarios, personas y roles (`/api/v1/usuarios`, `/personas`, `/roles`)
 
@@ -362,7 +381,7 @@ Reservado a `ADMIN`. Incluye CRUD completo sobre los tres recursos, asignación 
 
 | Operación | Permiso |
 |---|---|
-| `GET` (listar, buscar por zona) | `USER` o `ADMIN` |
+| `GET` (listar, buscar por zona) | `CLIENTE`, `RECAUDADOR`, `ADMIN` o `ROOT` |
 | `POST`, `PUT`, `DELETE`, cambio de estado | Sólo `ADMIN` |
 
 Tipos de zona: `VIP`, `REGULAR`, `INTERNA`, `EXTERNA`, `PREFERENCIAL`. Estados de espacio: `DISPONIBLE`, `OCUPADO`, `RESERVADO`, `FUERA_DE_SERVICIO`. Tipos de espacio: `MOTO`, `AUTO`, `BUS`.
@@ -371,8 +390,8 @@ Tipos de zona: `VIP`, `REGULAR`, `INTERNA`, `EXTERNA`, `PREFERENCIAL`. Estados d
 
 | Operación | Permiso |
 |---|---|
-| `GET` (listar, obtener) | `USER` ve los propios; `ADMIN` ve todos |
-| `POST`, `PATCH`, `DELETE` | `USER` sobre los propios; `ADMIN` sobre todos |
+| `GET` (listar, obtener, placa) | `CLIENTE` ve los propios; `RECAUDADOR`, `ADMIN` y `ROOT` ven todos |
+| `POST`, `PATCH`, `DELETE` | `CLIENTE` sobre los propios; `ADMIN` y `ROOT` sobre todos |
 
 > El backend **ignora** cualquier `ownerId` enviado en el body. Lo toma del claim `sub` del JWT.
 
@@ -382,12 +401,24 @@ Tipos de vehículo soportados: `auto`, `motocicleta`, `camioneta`, cada uno con 
 
 | Método | Ruta | Permiso | Descripción |
 |---|---|---|---|
-| `POST` | `/api/v1/asignaciones` | `USER` sobre sí mismo, `ADMIN` sobre cualquiera | Crea o reactiva una asignación. |
-| `GET` | `/api/v1/asignaciones` | `USER` ve las propias, `ADMIN` ve todas | Lista con filtros. |
-| `DELETE` | `/api/v1/asignaciones/{userId}/{vehicleId}` | `USER` sólo sobre sí mismo, `ADMIN` sobre todos | Soft delete. |
+| `POST` | `/api/v1/asignaciones` | `CLIENTE` sobre sí mismo, `ADMIN` sobre cualquiera | Crea o reactiva una asignación. |
+| `GET` | `/api/v1/asignaciones` | `CLIENTE` ve las propias, `ADMIN` ve todas | Lista con filtros. |
+| `DELETE` | `/api/v1/asignaciones/{userId}/{vehicleId}` | `CLIENTE` sólo sobre sí mismo, `ADMIN` sobre todos | Soft delete. |
 | `PUT` | `/api/v1/asignaciones/vehiculos/{vehicleId}/propietario` | Sólo `ADMIN` | Transfiere el propietario activo. |
-| `GET` | `/api/v1/propietarios/{userId}/vehiculos` | `USER` sólo la propia flota, `ADMIN` cualquiera | Flota agregada. |
+| `GET` | `/api/v1/propietarios/{userId}/vehiculos` | `CLIENTE` sólo la propia flota, `ADMIN` cualquiera | Flota agregada. |
 | `GET` | `/api/v1/asignaciones/auditoria` | Sólo `ADMIN` | Eventos de auditoría con snapshot anterior y nuevo. |
+
+### Tickets (`/api/v1/tickets`)
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| `POST` | `/api/v1/tickets` | `RECAUDADOR`, `ADMIN`, `ROOT` | Emite ticket de ingreso, valida asignación activa y ocupa el espacio. |
+| `GET` | `/api/v1/tickets` | `CLIENTE`, `RECAUDADOR`, `ADMIN`, `ROOT` | CLIENTE ve los propios; roles operativos consultan con filtros. |
+| `GET` | `/api/v1/tickets/{id}` | `CLIENTE`, `RECAUDADOR`, `ADMIN`, `ROOT` | Consulta un ticket por ID respetando permisos. |
+| `PATCH` | `/api/v1/tickets/{id}/pagar` | `RECAUDADOR`, `ADMIN`, `ROOT` | Registra salida, calcula valor recaudado y libera espacio. |
+| `PATCH` | `/api/v1/tickets/{id}/cancelar` | `RECAUDADOR`, `ADMIN`, `ROOT` | Cancela ticket activo con valor 0 y libera espacio. |
+
+El cobro usa mínimo de 30 minutos: `valor = (max(30, minutos) / 60) * tarifaVehiculo * factorEspacio`.
 
 ### Ejemplo de sesión
 
@@ -420,16 +451,17 @@ curl http://localhost:8000/api/v1/zonas \
 
 La forma recomendada de explorar y probar la API es el **Swagger UI**. Kong expone los `swagger-ui` y los JSON OpenAPI de cada servicio bajo su prefijo, sin requerir JWT.
 
-### Swagger UI centralizado (los 4 servicios en una sola URL)
+### Swagger UI centralizado (los 5 servicios en una sola URL)
 
-El servicio de **asignaciones** publica un Swagger UI que agrega las cuatro especificaciones OpenAPI. Es la **puerta de entrada recomendada** para probar la plataforma.
+El servicio de **asignaciones** publica un Swagger UI que agrega las cinco especificaciones OpenAPI. Es la **puerta de entrada recomendada** para probar la plataforma.
 
 | Recurso | URL |
 |---|---|
 | **Swagger UI centralizado** | **<http://localhost:8000/asignaciones/swagger-ui>** |
 | OpenAPI asignaciones | <http://localhost:8000/asignaciones/v3/api-docs> |
+| OpenAPI tickets | <http://localhost:8000/tickets/v3/api-docs> |
 
-> En la esquina superior derecha del Swagger UI centralizado verás un desplegable con las cuatro specs: **Asignaciones · Usuarios · Vehículos · Zonas**. Selecciona cualquiera y prueba sus endpoints.
+> En la esquina superior derecha del Swagger UI centralizado verás un desplegable con las specs: **Asignaciones · Usuarios · Vehículos · Zonas · Tickets**. Selecciona cualquiera y prueba sus endpoints.
 
 ### Swagger UI por servicio
 
@@ -441,6 +473,7 @@ Si prefieres abrir la documentación de un servicio concreto, también están di
 | zonas (Spring Boot) | <http://localhost:8000/zonas/swagger-ui/index.html> | <http://localhost:8000/zonas/v3/api-docs> |
 | vehiculos (NestJS) | <http://localhost:8000/vehiculos/swagger-ui> | <http://localhost:8000/vehiculos/v3/api-docs> |
 | asignaciones (NestJS) | <http://localhost:8000/asignaciones/swagger-ui> | <http://localhost:8000/asignaciones/v3/api-docs> |
+| tickets (NestJS) | <http://localhost:8000/tickets/swagger-ui> | <http://localhost:8000/tickets/v3/api-docs> |
 
 ### Cómo autenticarse desde Swagger UI
 
@@ -547,20 +580,43 @@ erDiagram
 erDiagram
     VEHICLE_ASSIGNMENT ||--o{ ASSIGNMENT_AUDIT_EVENT : genera
     VEHICLE_ASSIGNMENT {
-        uuid id PK
         uuid user_id
         uuid vehicle_id
-        boolean active
+        enum status
+        timestamp assigned_at
+        timestamp unassigned_at
     }
     ASSIGNMENT_AUDIT_EVENT {
         uuid id PK
-        uuid assignment_id FK
-        string event_type
+        uuid user_id
+        uuid vehicle_id
+        string action
         uuid actor_user_id
     }
 ```
 
 > La clave compuesta `user_id + vehicle_id` es la **fuente oficial** de propiedad vehículo-propietario. El `ownerId` que vive en `vehiculos` se conserva sólo por compatibilidad.
+
+### tickets
+
+```mermaid
+erDiagram
+    TICKETS {
+        uuid id PK
+        string codigo
+        uuid id_espacio
+        uuid id_usuario
+        uuid id_vehiculo
+        string placa_vehiculo
+        timestamp fecha_hora_ingreso
+        timestamp fecha_hora_salida
+        enum estado
+        uuid id_empleado
+        decimal valor_recaudado
+        string tipo_vehiculo
+        string tipo_espacio
+    }
+```
 
 ---
 
@@ -591,11 +647,11 @@ flowchart TB
 - **Tokens**:
   - Access token: JWT RS256, vida 15 min, validado en Kong y backend.
   - Refresh token: opaco, vida 7 d, almacenado con *hash* en base. Cada uso genera uno nuevo; reusar uno ya rotado **revoca toda la familia**.
-- **Registro público**: asigna siempre el rol `USER`. Para crear `ADMIN` se necesita otro `ADMIN`.
+- **Registro público**: asigna siempre el rol `CLIENTE`. Para crear `ADMIN` se necesita otro `ADMIN`.
 - **Vehículos**: `ownerId` se toma **exclusivamente** del claim `sub` del token. Aunque el cliente envíe `ownerId` en el body, el servicio lo ignora.
 - **Asignaciones**: la propiedad activa vive aquí. `vehiculos.ownerId` se mantiene sincronizado por compatibilidad pero la verdad está en `vehicle_assignment`.
 - **Auditoría**: cada `create`, `reactivate`, `transfer` o `soft delete` deja un `assignment_audit_event` con snapshot anterior y nuevo.
-- **Comunicaciones internas**: `asignaciones` consulta a `usuarios` y `vehiculos` por la red interna de Docker usando el header `X-Internal-Service-Token`. Esos endpoints no están publicados en Kong.
+- **Comunicaciones internas**: `asignaciones` consulta a `usuarios` y `vehiculos`; `tickets` consulta a `vehiculos`, `asignaciones` y `zonas` por la red interna de Docker usando el header `X-Internal-Service-Token`. Esos endpoints no están publicados en Kong.
 - **Esquema**: Hibernate valida el esquema y Flyway ejecuta las migraciones desde bases vacías en cada arranque.
 - **Aislamiento de red**: cada Postgres y cada red de backend es `internal: true`. El único puerto publicado al host es `8000` (Kong) y `9000` (cliente web).
 
@@ -629,26 +685,37 @@ Si prefieres Postman sobre Swagger UI (por ejemplo para *environments* por desar
 
 ## Datos de demostración
 
-El script `seed-demo` borra **únicamente** los volúmenes de este monorepo y carga un dataset de ejemplo.
+El script `seed-demo` carga un dataset de ejemplo usando las APIs reales. Si ya existen tickets, no duplica datos y te pide usar `--reset`. Con `--reset` borra **únicamente** los volúmenes de este monorepo y empieza desde cero.
 
 ```powershell
 # Desde PowerShell
-.\scripts\seed-demo.ps1 --reset
+.\scripts\seed-demo.ps1
 
 # O directamente en Ubuntu
-wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && bash scripts/seed-demo.sh --reset"
+bash scripts/seed-demo.sh
 ```
 
 | Recurso | Cantidad |
 |---|---|
-| Usuarios `USER` | 30 |
-| Zonas | 10 |
-| Espacios | 150 |
-| Vehículos | 90 |
+| Usuarios `CLIENTE` | 8 |
+| Usuario `RECAUDADOR` | 1 |
 | Administrador | 1 |
-| Roles | `USER`, `ADMIN` |
+| Zonas | 3 |
+| Espacios | 12 |
+| Vehículos | 16 |
+| Asignaciones activas | 16 |
+| Tickets | 1 `ACTIVO`, 1 `PAGADO`, 1 `CANCELADO` |
+| Roles | `CLIENTE`, `RECAUDADOR`, `ADMIN`, `ROOT` |
 
-> La contraseña compartida de los `USER` demo es **`Demo12345!`**. Úsala sólo en desarrollo. Si ejecutas el script **sin** `--reset` sobre datos ya cargados, habrá conflictos por identificadores únicos.
+Credenciales útiles:
+
+| Rol | Usuario | Contraseña |
+|---|---|---|
+| `ADMIN` | `admin` | `Admin12345!` |
+| `RECAUDADOR` | `rdrecaudador` | `Recaudador12345!` |
+| `CLIENTE` demo | ver salida del script, por ejemplo `adalvarez` | `Demo12345!` |
+
+> Usa estas credenciales sólo en desarrollo. El script también imprime placas y espacios útiles para probar tickets.
 
 ---
 
@@ -665,7 +732,8 @@ wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && 
 | Apagar todo | `docker compose down` |
 | Apagar y borrar volúmenes | `docker compose down -v` |
 | Regenerar claves + Kong | `.\scripts\bootstrap.ps1 -Force` |
-| Re-cargar datos demo | `.\scripts\seed-demo.ps1 --reset` |
+| Cargar datos demo | `.\scripts\seed-demo.ps1` |
+| Re-cargar datos demo desde cero | `.\scripts\seed-demo.ps1 --reset` |
 
 ### Inspección rápida
 
@@ -685,7 +753,7 @@ docker exec kong wget -qO- http://usuarios:8080/actuator/health
 |---|---|---|
 | `Connection refused` a `localhost:8000` | Kong no está arriba o `docker compose` falló. | `docker compose ps` y `docker compose logs kong`. |
 | Swagger UI no carga o muestra JSON crudo | El servicio no ha terminado de arrancar o su OpenAPI no se generó. | Espera a que `docker compose ps` muestre `healthy`. Comprueba `GET http://localhost:8000/<servicio>/v3/api-docs` directamente. |
-| `401` desde Kong | Token ausente, expirado o con issuer/audience incorrectos. | Inspecciona el JWT en el cliente web y verifica `JWT_ISSUER` / `JWT_AUDIENCE` del `.env`. |
+| `401` desde Kong con `Unauthorized`, `Bad token` o `invalid signature` | El access token falta, expiro, esta mal pegado o incluye texto extra como `refreshToken`. Kong corta la solicitud antes de que llegue al backend. | Haz login otra vez y pega solo el `accessToken` en Swagger Authorize. No pegues `Bearer`, comillas, JSON completo ni `refreshToken`. |
 | `403` desde un backend | El token pasó Kong pero el rol no permite la operación. | Revisa la tabla de permisos. Inicia sesión como `ADMIN` si la ruta lo requiere. |
 | `429` | Rate limit de Kong activo. | Espera el tiempo indicado y reintenta. Los límites están en `infrastructure/kong/kong.yml`. |
 | Cambié `CORS_ORIGINS` y no aplica | Kong no se ha regenerado. | Ejecuta `.\scripts\bootstrap.ps1` de nuevo y recrea Kong: `docker compose up -d --force-recreate kong`. |
@@ -710,7 +778,7 @@ docker compose logs kong --tail=200
 
 ```text
 Distribuidas-PC2/
-├── docker-compose.yml           Orquestación: 4 servicios, 4 Postgres, Kong, web
+├── docker-compose.yml           Orquestación: 5 servicios, 5 Postgres, Kong, web
 ├── .env.example                 Plantilla de variables (copiada a .env por el bootstrap)
 ├── .gitignore                   Excluye .env, .secrets/, kong.yml, node_modules, etc.
 │
@@ -718,7 +786,8 @@ Distribuidas-PC2/
 │   ├── usuarios/                Spring Boot 4.1 · auth + personas + usuarios + roles
 │   ├── zonas/                   Spring Boot 4.0 · zonas + espacios
 │   ├── vehiculos/               NestJS 11 · vehículos por dueño
-│   └── asignaciones/            NestJS 11 · propiedad + auditoría
+│   ├── asignaciones/            NestJS 11 · propiedad + auditoría
+│   └── tickets/                 NestJS 11 · emisión, pago y cancelación de tickets
 │
 ├── infrastructure/
 │   └── kong/
