@@ -685,26 +685,37 @@ Si prefieres Postman sobre Swagger UI (por ejemplo para *environments* por desar
 
 ## Datos de demostración
 
-El script `seed-demo` borra **únicamente** los volúmenes de este monorepo y carga un dataset de ejemplo.
+El script `seed-demo` carga un dataset de ejemplo usando las APIs reales. Si ya existen tickets, no duplica datos y te pide usar `--reset`. Con `--reset` borra **únicamente** los volúmenes de este monorepo y empieza desde cero.
 
 ```powershell
 # Desde PowerShell
-.\scripts\seed-demo.ps1 --reset
+.\scripts\seed-demo.ps1
 
 # O directamente en Ubuntu
-wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && bash scripts/seed-demo.sh --reset"
+bash scripts/seed-demo.sh
 ```
 
 | Recurso | Cantidad |
 |---|---|
-| Usuarios `CLIENTE` | 30 |
-| Zonas | 10 |
-| Espacios | 150 |
-| Vehículos | 90 |
+| Usuarios `CLIENTE` | 8 |
+| Usuario `RECAUDADOR` | 1 |
 | Administrador | 1 |
+| Zonas | 3 |
+| Espacios | 12 |
+| Vehículos | 16 |
+| Asignaciones activas | 16 |
+| Tickets | 1 `ACTIVO`, 1 `PAGADO`, 1 `CANCELADO` |
 | Roles | `CLIENTE`, `RECAUDADOR`, `ADMIN`, `ROOT` |
 
-> La contraseña compartida de los `CLIENTE` demo es **`Demo12345!`**. Úsala sólo en desarrollo. Si ejecutas el script **sin** `--reset` sobre datos ya cargados, habrá conflictos por identificadores únicos.
+Credenciales útiles:
+
+| Rol | Usuario | Contraseña |
+|---|---|---|
+| `ADMIN` | `admin` | `Admin12345!` |
+| `RECAUDADOR` | `rdrecaudador` | `Recaudador12345!` |
+| `CLIENTE` demo | ver salida del script, por ejemplo `adalvarez` | `Demo12345!` |
+
+> Usa estas credenciales sólo en desarrollo. El script también imprime placas y espacios útiles para probar tickets.
 
 ---
 
@@ -721,7 +732,8 @@ wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && 
 | Apagar todo | `docker compose down` |
 | Apagar y borrar volúmenes | `docker compose down -v` |
 | Regenerar claves + Kong | `.\scripts\bootstrap.ps1 -Force` |
-| Re-cargar datos demo | `.\scripts\seed-demo.ps1 --reset` |
+| Cargar datos demo | `.\scripts\seed-demo.ps1` |
+| Re-cargar datos demo desde cero | `.\scripts\seed-demo.ps1 --reset` |
 
 ### Inspección rápida
 
@@ -741,7 +753,7 @@ docker exec kong wget -qO- http://usuarios:8080/actuator/health
 |---|---|---|
 | `Connection refused` a `localhost:8000` | Kong no está arriba o `docker compose` falló. | `docker compose ps` y `docker compose logs kong`. |
 | Swagger UI no carga o muestra JSON crudo | El servicio no ha terminado de arrancar o su OpenAPI no se generó. | Espera a que `docker compose ps` muestre `healthy`. Comprueba `GET http://localhost:8000/<servicio>/v3/api-docs` directamente. |
-| `401` desde Kong | Token ausente, expirado o con issuer/audience incorrectos. | Inspecciona el JWT en el cliente web y verifica `JWT_ISSUER` / `JWT_AUDIENCE` del `.env`. |
+| `401` desde Kong con `Unauthorized`, `Bad token` o `invalid signature` | El access token falta, expiro, esta mal pegado o incluye texto extra como `refreshToken`. Kong corta la solicitud antes de que llegue al backend. | Haz login otra vez y pega solo el `accessToken` en Swagger Authorize. No pegues `Bearer`, comillas, JSON completo ni `refreshToken`. |
 | `403` desde un backend | El token pasó Kong pero el rol no permite la operación. | Revisa la tabla de permisos. Inicia sesión como `ADMIN` si la ruta lo requiere. |
 | `429` | Rate limit de Kong activo. | Espera el tiempo indicado y reintenta. Los límites están en `infrastructure/kong/kong.yml`. |
 | Cambié `CORS_ORIGINS` y no aplica | Kong no se ha regenerado. | Ejecuta `.\scripts\bootstrap.ps1` de nuevo y recrea Kong: `docker compose up -d --force-recreate kong`. |

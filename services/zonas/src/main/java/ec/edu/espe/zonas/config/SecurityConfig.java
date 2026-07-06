@@ -1,6 +1,8 @@
 package ec.edu.espe.zonas.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Collection;
 import java.util.List;
@@ -52,6 +54,19 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, exception) -> writeSecurityError(
+                                response,
+                                HttpServletResponse.SC_UNAUTHORIZED,
+                                "Unauthorized",
+                                accessTokenMessage(request.getHeader("Authorization")),
+                                request.getRequestURI()))
+                        .accessDeniedHandler((request, response, exception) -> writeSecurityError(
+                                response,
+                                HttpServletResponse.SC_FORBIDDEN,
+                                "Forbidden",
+                                "No tienes permisos para realizar esta operacion con tu rol actual",
+                                request.getRequestURI())))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v1/internal/**").permitAll()
@@ -63,6 +78,31 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(authorities())))
                 .build();
+    }
+
+    private String accessTokenMessage(String authorization) {
+        if (authorization == null || authorization.isBlank()) {
+            return "Access token ausente. Inicia sesion y envia el header Authorization: Bearer <accessToken>";
+        }
+        return "Access token invalido o expirado. Copia solo el accessToken, sin comillas, sin refreshToken y sin texto extra";
+    }
+
+    private void writeSecurityError(
+            HttpServletResponse response,
+            int status,
+            String error,
+            String message,
+            String path) throws IOException {
+        response.setStatus(status);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("""
+                {"timestamp":"%s","status":%d,"error":"%s","message":"%s","path":"%s","validationErrors":null}
+                """.formatted(LocalDateTime.now(), status, error, escape(message), escape(path)));
+    }
+
+    private String escape(String value) {
+        return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private Converter<Jwt, AbstractAuthenticationToken> authorities() {
