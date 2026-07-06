@@ -111,6 +111,9 @@ flowchart LR
     Kong -->|JWT| Tickets
     Usuarios -.->|X-Internal-Service-Token| Asignaciones
     Vehiculos -.->|X-Internal-Service-Token| Asignaciones
+    Tickets -.->|X-Internal-Service-Token| Vehiculos
+    Tickets -.->|X-Internal-Service-Token| Asignaciones
+    Tickets -.->|X-Internal-Service-Token| Zonas
     Usuarios --> DbU
     Zonas --> DbZ
     Vehiculos --> DbV
@@ -577,20 +580,43 @@ erDiagram
 erDiagram
     VEHICLE_ASSIGNMENT ||--o{ ASSIGNMENT_AUDIT_EVENT : genera
     VEHICLE_ASSIGNMENT {
-        uuid id PK
         uuid user_id
         uuid vehicle_id
-        boolean active
+        enum status
+        timestamp assigned_at
+        timestamp unassigned_at
     }
     ASSIGNMENT_AUDIT_EVENT {
         uuid id PK
-        uuid assignment_id FK
-        string event_type
+        uuid user_id
+        uuid vehicle_id
+        string action
         uuid actor_user_id
     }
 ```
 
 > La clave compuesta `user_id + vehicle_id` es la **fuente oficial** de propiedad vehículo-propietario. El `ownerId` que vive en `vehiculos` se conserva sólo por compatibilidad.
+
+### tickets
+
+```mermaid
+erDiagram
+    TICKETS {
+        uuid id PK
+        string codigo
+        uuid id_espacio
+        uuid id_usuario
+        uuid id_vehiculo
+        string placa_vehiculo
+        timestamp fecha_hora_ingreso
+        timestamp fecha_hora_salida
+        enum estado
+        uuid id_empleado
+        decimal valor_recaudado
+        string tipo_vehiculo
+        string tipo_espacio
+    }
+```
 
 ---
 
@@ -625,7 +651,7 @@ flowchart TB
 - **Vehículos**: `ownerId` se toma **exclusivamente** del claim `sub` del token. Aunque el cliente envíe `ownerId` en el body, el servicio lo ignora.
 - **Asignaciones**: la propiedad activa vive aquí. `vehiculos.ownerId` se mantiene sincronizado por compatibilidad pero la verdad está en `vehicle_assignment`.
 - **Auditoría**: cada `create`, `reactivate`, `transfer` o `soft delete` deja un `assignment_audit_event` con snapshot anterior y nuevo.
-- **Comunicaciones internas**: `asignaciones` consulta a `usuarios` y `vehiculos` por la red interna de Docker usando el header `X-Internal-Service-Token`. Esos endpoints no están publicados en Kong.
+- **Comunicaciones internas**: `asignaciones` consulta a `usuarios` y `vehiculos`; `tickets` consulta a `vehiculos`, `asignaciones` y `zonas` por la red interna de Docker usando el header `X-Internal-Service-Token`. Esos endpoints no están publicados en Kong.
 - **Esquema**: Hibernate valida el esquema y Flyway ejecuta las migraciones desde bases vacías en cada arranque.
 - **Aislamiento de red**: cada Postgres y cada red de backend es `internal: true`. El único puerto publicado al host es `8000` (Kong) y `9000` (cliente web).
 
@@ -748,7 +774,8 @@ Distribuidas-PC2/
 │   ├── usuarios/                Spring Boot 4.1 · auth + personas + usuarios + roles
 │   ├── zonas/                   Spring Boot 4.0 · zonas + espacios
 │   ├── vehiculos/               NestJS 11 · vehículos por dueño
-│   └── asignaciones/            NestJS 11 · propiedad + auditoría
+│   ├── asignaciones/            NestJS 11 · propiedad + auditoría
+│   └── tickets/                 NestJS 11 · emisión, pago y cancelación de tickets
 │
 ├── infrastructure/
 │   └── kong/
