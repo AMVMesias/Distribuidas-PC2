@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { VehiculosService } from './vehiculos.service';
 import { CreateVehiculoDto } from './dto/create-vehiculo.dto';
@@ -24,6 +24,8 @@ export class VehiculosController {
   @ApiResponse({ status: 201, description: 'Vehículo creado', type: RespuestaVehiculoDto })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
+  @ApiResponse({ status: 403, description: 'RECAUDADOR no puede crear vehículos' })
+  @ApiResponse({ status: 409, description: 'Ya existe un vehículo con esa placa' })
   create(@Body() dto: CreateVehiculoDto, @Req() req: AuthenticatedRequest) {
     return this.vehiculosService.create(dto, req.user);
   }
@@ -35,6 +37,7 @@ export class VehiculosController {
       'CLIENTE ve sus vehículos. RECAUDADOR, ADMIN y ROOT pueden consultar todos para operación del parqueadero.',
   })
   @ApiResponse({ status: 200, description: 'Listado de vehículos', type: [RespuestaVehiculoDto] })
+  @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
   findAll(@Req() req: AuthenticatedRequest) {
     return this.vehiculosService.findAll(req.user);
   }
@@ -42,8 +45,9 @@ export class VehiculosController {
   @Get('placa/:placa')
   @ApiOperation({ summary: 'Buscar vehículo por placa' })
   @ApiResponse({ status: 200, description: 'Vehículo', type: RespuestaVehiculoDto })
+  @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
   @ApiResponse({ status: 403, description: 'CLIENTE intentando consultar vehículo ajeno' })
-  @ApiResponse({ status: 404, description: 'No existe' })
+  @ApiResponse({ status: 404, description: 'No se encontró un vehículo con esa placa' })
   findByPlaca(@Param('placa') placa: string, @Req() req: AuthenticatedRequest) {
     return this.vehiculosService.findByPlaca(placa, req.user);
   }
@@ -51,18 +55,22 @@ export class VehiculosController {
   @Get(':id')
   @ApiOperation({ summary: 'Obtener vehículo por UUID' })
   @ApiResponse({ status: 200, description: 'Vehículo', type: RespuestaVehiculoDto })
+  @ApiResponse({ status: 400, description: 'ID de vehículo inválido. Debe ser un UUID válido' })
+  @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
   @ApiResponse({ status: 403, description: 'No es dueño ni tiene permiso operativo' })
-  @ApiResponse({ status: 404, description: 'No existe' })
-  findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: AuthenticatedRequest) {
+  @ApiResponse({ status: 404, description: 'No se encontró un vehículo con ese ID' })
+  findOne(@Param('id', vehicleUuidPipe()) id: string, @Req() req: AuthenticatedRequest) {
     return this.vehiculosService.findOne(id, req.user);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar vehículo parcialmente' })
   @ApiResponse({ status: 200, description: 'Vehículo actualizado', type: RespuestaVehiculoDto })
+  @ApiResponse({ status: 400, description: 'ID de vehículo inválido o datos inválidos' })
+  @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
   @ApiResponse({ status: 403, description: 'RECAUDADOR no puede modificar vehículos o no es dueño' })
-  @ApiResponse({ status: 404, description: 'No existe' })
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateVehiculoDto,
+  @ApiResponse({ status: 404, description: 'No se encontró un vehículo con ese ID' })
+  update(@Param('id', vehicleUuidPipe()) id: string, @Body() dto: UpdateVehiculoDto,
     @Req() req: AuthenticatedRequest) {
     return this.vehiculosService.update(id, dto, req.user);
   }
@@ -70,9 +78,17 @@ export class VehiculosController {
   @Delete(':id')
   @ApiOperation({ summary: 'Eliminar vehículo' })
   @ApiResponse({ status: 200, description: 'Vehículo eliminado' })
+  @ApiResponse({ status: 400, description: 'ID de vehículo inválido. Debe ser un UUID válido' })
+  @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
   @ApiResponse({ status: 403, description: 'RECAUDADOR no puede eliminar vehículos o no es dueño' })
-  @ApiResponse({ status: 404, description: 'No existe' })
-  remove(@Param('id', ParseUUIDPipe) id: string, @Req() req: AuthenticatedRequest) {
+  @ApiResponse({ status: 404, description: 'No se encontró un vehículo con ese ID' })
+  remove(@Param('id', vehicleUuidPipe()) id: string, @Req() req: AuthenticatedRequest) {
     return this.vehiculosService.remove(id, req.user);
   }
+}
+
+function vehicleUuidPipe() {
+  return new ParseUUIDPipe({
+    exceptionFactory: () => new BadRequestException('ID de vehículo inválido. Debe ser un UUID válido'),
+  });
 }

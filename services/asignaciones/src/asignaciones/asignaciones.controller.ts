@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -97,12 +98,13 @@ export class AsignacionesController {
     description: 'CLIENTE solo elimina asignaciones propias. ADMIN puede eliminar cualquier asignación activa. No borra histórico.',
   })
   @ApiResponse({ status: 200, description: 'Asignación marcada como INACTIVE', type: AssignmentResponseDto })
+  @ApiResponse({ status: 400, description: 'userId o vehicleId inválido. Deben ser UUID válidos' })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
   @ApiResponse({ status: 403, description: 'CLIENTE intentando eliminar asignación ajena' })
   @ApiResponse({ status: 404, description: 'Asignación activa no encontrada' })
   remove(
-    @Param('userId', ParseUUIDPipe) userId: string,
-    @Param('vehicleId', ParseUUIDPipe) vehicleId: string,
+    @Param('userId', userUuidPipe()) userId: string,
+    @Param('vehicleId', vehicleUuidPipe()) vehicleId: string,
     @Req() req: AuthenticatedRequest,
     @Headers('x-request-id') requestId?: string,
   ) {
@@ -130,7 +132,7 @@ export class AsignacionesController {
   @ApiResponse({ status: 404, description: 'Usuario o vehículo no encontrado' })
   @ApiResponse({ status: 409, description: 'El vehículo ya pertenece activamente a ese propietario' })
   transfer(
-    @Param('vehicleId', ParseUUIDPipe) vehicleId: string,
+    @Param('vehicleId', vehicleUuidPipe()) vehicleId: string,
     @Body() dto: TransferAssignmentDto,
     @Req() req: AuthenticatedRequest,
     @Headers('x-request-id') requestId?: string,
@@ -145,10 +147,23 @@ export class AsignacionesController {
       'CLIENTE solo consulta su propia flota. ADMIN puede consultar cualquier propietario. Agrega tipo y categoría desde el servicio de vehículos.',
   })
   @ApiResponse({ status: 200, description: 'Flota agregada del propietario', type: FleetResponseDto })
+  @ApiResponse({ status: 400, description: 'ID de propietario inválido. Debe ser un UUID válido' })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
   @ApiResponse({ status: 403, description: 'CLIENTE intentando consultar otra flota' })
   @ApiResponse({ status: 404, description: 'Propietario o vehículo no encontrado' })
-  findFleet(@Param('userId', ParseUUIDPipe) userId: string, @Req() req: AuthenticatedRequest) {
+  findFleet(@Param('userId', userUuidPipe()) userId: string, @Req() req: AuthenticatedRequest) {
     return this.service.findFleet(userId, req.user);
   }
+}
+
+function userUuidPipe() {
+  return new ParseUUIDPipe({
+    exceptionFactory: () => new BadRequestException('ID de usuario inválido. Debe ser un UUID válido'),
+  });
+}
+
+function vehicleUuidPipe() {
+  return new ParseUUIDPipe({
+    exceptionFactory: () => new BadRequestException('ID de vehículo inválido. Debe ser un UUID válido'),
+  });
 }

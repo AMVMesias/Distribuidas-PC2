@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Headers, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { AuthenticatedRequest } from '../auth/auth-user';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -40,7 +40,9 @@ export class TicketsController {
   @Get()
   @ApiOperation({ summary: 'Listar tickets', description: 'CLIENTE ve los propios. RECAUDADOR, ADMIN y ROOT pueden listar tickets operativos.' })
   @ApiResponse({ status: 200, description: 'Listado de tickets', type: [TicketResponseDto] })
+  @ApiResponse({ status: 400, description: 'Filtro inválido. Revisa estado, idUsuario, idVehiculo o idEspacio' })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
+  @ApiResponse({ status: 403, description: 'Rol sin permisos para listar tickets' })
   findAll(@Query() query: ListTicketsQueryDto, @Req() req: AuthenticatedRequest) {
     return this.service.findAll(query, req.user);
   }
@@ -48,29 +50,38 @@ export class TicketsController {
   @Get(':id')
   @ApiOperation({ summary: 'Obtener ticket por ID' })
   @ApiResponse({ status: 200, description: 'Ticket', type: TicketResponseDto })
+  @ApiResponse({ status: 400, description: 'ID de ticket inválido. Debe ser un UUID válido' })
   @ApiResponse({ status: 403, description: 'CLIENTE intentando consultar ticket ajeno' })
   @ApiResponse({ status: 404, description: 'Ticket no encontrado' })
-  findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: AuthenticatedRequest) {
+  findOne(@Param('id', ticketUuidPipe()) id: string, @Req() req: AuthenticatedRequest) {
     return this.service.findOne(id, req.user);
   }
 
   @Patch(':id/pagar')
   @ApiOperation({ summary: 'Registrar salida y pago del ticket' })
   @ApiResponse({ status: 200, description: 'Ticket pagado', type: TicketResponseDto })
+  @ApiResponse({ status: 400, description: 'ID de ticket inválido. Debe ser un UUID válido' })
   @ApiResponse({ status: 403, description: 'Rol sin permisos para pagar tickets' })
   @ApiResponse({ status: 404, description: 'Ticket no encontrado' })
   @ApiResponse({ status: 409, description: 'Ticket no está activo' })
-  pay(@Param('id', ParseUUIDPipe) id: string, @Req() req: AuthenticatedRequest, @Headers('x-request-id') requestId?: string) {
+  pay(@Param('id', ticketUuidPipe()) id: string, @Req() req: AuthenticatedRequest, @Headers('x-request-id') requestId?: string) {
     return this.service.pay(id, req.user, requestId);
   }
 
   @Patch(':id/cancelar')
   @ApiOperation({ summary: 'Cancelar ticket activo' })
   @ApiResponse({ status: 200, description: 'Ticket cancelado', type: TicketResponseDto })
+  @ApiResponse({ status: 400, description: 'ID de ticket inválido. Debe ser un UUID válido' })
   @ApiResponse({ status: 403, description: 'Rol sin permisos para cancelar tickets' })
   @ApiResponse({ status: 404, description: 'Ticket no encontrado' })
   @ApiResponse({ status: 409, description: 'Ticket no está activo' })
-  cancel(@Param('id', ParseUUIDPipe) id: string, @Req() req: AuthenticatedRequest) {
+  cancel(@Param('id', ticketUuidPipe()) id: string, @Req() req: AuthenticatedRequest) {
     return this.service.cancel(id, req.user);
   }
+}
+
+function ticketUuidPipe() {
+  return new ParseUUIDPipe({
+    exceptionFactory: () => new BadRequestException('ID de ticket inválido. Debe ser un UUID válido'),
+  });
 }
