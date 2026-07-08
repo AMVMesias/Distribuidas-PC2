@@ -27,7 +27,7 @@ export class VehiculosController {
   @ApiResponse({ status: 403, description: 'RECAUDADOR no puede crear vehículos' })
   @ApiResponse({ status: 409, description: 'Ya existe un vehículo con esa placa' })
   create(@Body() dto: CreateVehiculoDto, @Req() req: AuthenticatedRequest) {
-    return this.vehiculosService.create(dto, req.user);
+    return this.vehiculosService.create(dto, req.user, { ip: req.ip });
   }
 
   @Get()
@@ -72,7 +72,7 @@ export class VehiculosController {
   @ApiResponse({ status: 404, description: 'No se encontró un vehículo con ese ID' })
   update(@Param('id', vehicleUuidPipe()) id: string, @Body() dto: UpdateVehiculoDto,
     @Req() req: AuthenticatedRequest) {
-    return this.vehiculosService.update(id, dto, req.user);
+    return this.vehiculosService.update(id, dto, req.user, { ip: req.ip });
   }
 
   @Delete(':id')
@@ -83,7 +83,7 @@ export class VehiculosController {
   @ApiResponse({ status: 403, description: 'RECAUDADOR no puede eliminar vehículos o no es dueño' })
   @ApiResponse({ status: 404, description: 'No se encontró un vehículo con ese ID' })
   remove(@Param('id', vehicleUuidPipe()) id: string, @Req() req: AuthenticatedRequest) {
-    return this.vehiculosService.remove(id, req.user);
+    return this.vehiculosService.remove(id, req.user, { ip: req.ip });
   }
 }
 

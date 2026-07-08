@@ -9,29 +9,35 @@ import { AuthUser } from '../auth/auth-user';
 import { Auto } from './entities/auto.entity';
 import { Camioneta } from './entities/camioneta.entity';
 import { Motocicleta } from './entities/motocicleta.entity';
+import { AuditEvent, AuditRequestContext, EventPublisherService } from './event-publisher.service';
 
 @Injectable()
 export class VehiculosService {
-  constructor(@InjectRepository(Vehiculo) private readonly repository: Repository<Vehiculo>) {}
+  constructor(
+    @InjectRepository(Vehiculo) private readonly repositoryVehiculos: Repository<Vehiculo>,
+    private readonly eventPublisher: EventPublisherService,
+  ) {}
 
-  async create(dto: CreateVehiculoDto, user: AuthUser) {
+  async create(dto: CreateVehiculoDto, user: AuthUser, auditContext?: AuditRequestContext) {
     this.ensureCanWrite(user);
-    const existe = await this.repository.findOne({ where: { placa: dto.datos.placa } });
+    const existe = await this.repositoryVehiculos.findOne({ where: { placa: dto.datos.placa } });
     if (existe) throw new ConflictException(`Ya existe un vehículo con la placa ${dto.datos.placa}`);
     const vehiculo = FactoryVehiculos.crear(dto);
     vehiculo.ownerId = user.userId;
-    return this.repository.save(vehiculo);
+    const saved = await this.repositoryVehiculos.save(vehiculo);
+    await this.emitEvent('CREATE', saved, user, auditContext);
+    return saved;
   }
 
   findAll(user: AuthUser): Promise<Vehiculo[]> {
     return this.canReadAll(user)
-      ? this.repository.find()
-      : this.repository.find({ where: { ownerId: user.userId } });
+      ? this.repositoryVehiculos.find()
+      : this.repositoryVehiculos.find({ where: { ownerId: user.userId } });
   }
 
   async findOne(id: string, user: AuthUser) {
     const where = this.canReadAll(user) ? { id } : { id, ownerId: user.userId };
-    const vehiculo = await this.repository.findOne({ where });
+    const vehiculo = await this.repositoryVehiculos.findOne({ where });
     if (!vehiculo) throw new NotFoundException(`No se encontró un vehículo con el ID ${id}`);
     return vehiculo;
   }
@@ -39,34 +45,37 @@ export class VehiculosService {
   async findByPlaca(placa: string, user: AuthUser) {
     const placaNormalizada = placa.trim().toUpperCase();
     const where = this.canReadAll(user) ? { placa: placaNormalizada } : { placa: placaNormalizada, ownerId: user.userId };
-    const vehiculo = await this.repository.findOne({ where });
+    const vehiculo = await this.repositoryVehiculos.findOne({ where });
     if (!vehiculo) throw new NotFoundException(`No se encontró un vehículo con la placa ${placaNormalizada}`);
     return vehiculo;
   }
 
-  async update(id: string, dto: UpdateVehiculoDto, user: AuthUser) {
+  async update(id: string, dto: UpdateVehiculoDto, user: AuthUser, auditContext?: AuditRequestContext) {
     this.ensureCanWrite(user);
     const vehiculo = await this.findOne(id, user);
     if (dto.datos) Object.assign(vehiculo, dto.datos);
-    return this.repository.save(vehiculo);
+    const saved = await this.repositoryVehiculos.save(vehiculo);
+    await this.emitEvent('UPDATE', saved, user, auditContext, { cambios: dto.datos });
+    return saved;
   }
 
-  async remove(id: string, user: AuthUser) {
+  async remove(id: string, user: AuthUser, auditContext?: AuditRequestContext) {
     this.ensureCanWrite(user);
     const vehiculo = await this.findOne(id, user);
-    await this.repository.remove(vehiculo);
+    await this.repositoryVehiculos.remove(vehiculo);
+    await this.emitEvent('DELETE', vehiculo, user, auditContext);
     return vehiculo;
   }
 
   async findInternalById(id: string) {
-    const vehiculo = await this.repository.findOne({ where: { id } });
+    const vehiculo = await this.repositoryVehiculos.findOne({ where: { id } });
     if (!vehiculo) throw new NotFoundException(`No se encontró un vehículo con el ID ${id}`);
     return this.internalPayload(vehiculo);
   }
 
   async findInternalByPlaca(placa: string) {
     const placaNormalizada = placa.trim().toUpperCase();
-    const vehiculo = await this.repository.findOne({ where: { placa: placaNormalizada } });
+    const vehiculo = await this.repositoryVehiculos.findOne({ where: { placa: placaNormalizada } });
     if (!vehiculo) throw new NotFoundException(`No se encontró un vehículo con la placa ${placaNormalizada}`);
     return this.internalPayload(vehiculo);
   }
@@ -102,5 +111,42 @@ export class VehiculosService {
     if (vehiculo instanceof Camioneta) return 'camioneta';
     const tipo = vehiculo.obtenerTipo().toLowerCase();
     return tipo === 'motocicleta' ? 'motocicleta' : tipo;
+  }
+
+  private async emitEvent(
+    accion: AuditEvent['accion'],
+    vehiculo: Vehiculo,
+    user: AuthUser,
+    auditContext?: AuditRequestContext,
+    datosExtra?: Record<string, any>,
+  ) {
+    const event: AuditEvent = {
+      servicio: 'ms-vehiculos',
+      accion,
+      entidad: 'VEHICULO',
+      datos: {
+        id: vehiculo.id,
+        placa: vehiculo.placa,
+        ownerId: vehiculo.ownerId,
+        marca: vehiculo.marca,
+        modelo: vehiculo.modelo,
+        anio: vehiculo.anio,
+        color: vehiculo.color,
+        clasificacion: vehiculo.clasificacion,
+        ...datosExtra,
+      },
+      usuario: user.username,
+      rol: user.roles[0] ?? 'USER',
+      ip: this.normalizeIp(auditContext?.ip),
+      mac: '00:00:00:00:00:00',
+    };
+
+    await this.eventPublisher.publish(event);
+  }
+
+  private normalizeIp(ip?: string): string {
+    if (!ip || ip === '::1') return '127.0.0.1';
+    if (ip.startsWith('::ffff:')) return ip.replace('::ffff:', '');
+    return ip;
   }
 }

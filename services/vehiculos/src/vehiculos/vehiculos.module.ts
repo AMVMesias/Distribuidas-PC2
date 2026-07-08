@@ -12,11 +12,12 @@ import { Camioneta } from './entities/camioneta.entity';
 import { JwtStrategy } from '../auth/jwt.strategy';
 import { RolesGuard } from '../auth/roles.guard';
 import { InternalTokenGuard } from '../auth/internal-token.guard';
+import { EventPublisherService } from './event-publisher.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Vehiculo, Auto, Motocicleta, Camioneta]), PassportModule],
   controllers: [VehiculosController, RootVehiculosController, InternalVehiculosController],
-  providers: [VehiculosService, JwtStrategy, RolesGuard, InternalTokenGuard],
+  providers: [VehiculosService, JwtStrategy, RolesGuard, InternalTokenGuard, EventPublisherService],
   exports: [VehiculosService],
 })
 export class VehiculosModule {}
