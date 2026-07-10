@@ -15,6 +15,7 @@ import { ListAuditQueryDto } from './dto/list-audit-query.dto';
 import { TransferAssignmentDto } from './dto/transfer-assignment.dto';
 import { AssignmentAuditAction, AssignmentAuditEvent } from './entities/assignment-audit-event.entity';
 import { AssignmentStatus, VehicleAssignment } from './entities/vehicle-assignment.entity';
+import { EventPublisherService, AuditRequestContext, AuditEvent } from './event-publisher.service';
 
 @Injectable()
 export class AsignacionesService {
@@ -25,9 +26,10 @@ export class AsignacionesService {
     private readonly auditEvents: Repository<AssignmentAuditEvent>,
     private readonly dataSource: DataSource,
     private readonly clients: InternalClients,
+    private readonly eventPublisher: EventPublisherService,
   ) {}
 
-  async create(dto: CreateAssignmentDto, actor: AuthUser, requestId?: string) {
+  async create(dto: CreateAssignmentDto, actor: AuthUser, requestId?: string, auditContext?: AuditRequestContext) {
     const targetUserId = this.resolveTargetUser(dto.userId, actor);
     await this.ensureActiveUser(targetUserId);
     await this.clients.getVehicle(dto.vehicleId);
@@ -70,6 +72,7 @@ export class AsignacionesService {
         before,
         this.assignmentPayload(saved),
         requestId,
+        auditContext,
       );
       return saved;
     });
@@ -103,7 +106,7 @@ export class AsignacionesService {
     return assignment;
   }
 
-  async remove(userId: string, vehicleId: string, actor: AuthUser, requestId?: string) {
+  async remove(userId: string, vehicleId: string, actor: AuthUser, requestId?: string, auditContext?: AuditRequestContext) {
     if (!this.isAdmin(actor) && userId !== actor.userId) {
       throw new ForbiddenException('No puedes eliminar asignaciones de otro propietario');
     }
@@ -131,12 +134,13 @@ export class AsignacionesService {
         before,
         this.assignmentPayload(saved),
         requestId,
+        auditContext,
       );
       return saved;
     });
   }
 
-  async transfer(vehicleId: string, dto: TransferAssignmentDto, actor: AuthUser, requestId?: string) {
+  async transfer(vehicleId: string, dto: TransferAssignmentDto, actor: AuthUser, requestId?: string, auditContext?: AuditRequestContext) {
     this.requireAdmin(actor);
     await this.ensureActiveUser(dto.userId);
     await this.clients.getVehicle(vehicleId);
@@ -164,6 +168,7 @@ export class AsignacionesService {
           beforeActive,
           this.assignmentPayload(inactive),
           requestId,
+          auditContext,
         );
       }
 
@@ -192,6 +197,7 @@ export class AsignacionesService {
         beforeTarget,
         this.assignmentPayload(saved),
         requestId,
+        auditContext,
       );
       return saved;
     });
@@ -250,6 +256,7 @@ export class AsignacionesService {
     beforePayload: Record<string, unknown> | null,
     afterPayload: Record<string, unknown> | null,
     requestId?: string,
+    auditContext?: AuditRequestContext,
   ) {
     const audit = manager.getRepository(AssignmentAuditEvent).create({
       userId: assignment.userId,
@@ -264,6 +271,7 @@ export class AsignacionesService {
       requestId: requestId ?? null,
     });
     await manager.getRepository(AssignmentAuditEvent).save(audit);
+    await this.emitRabbitEvent(action, assignment, actor, auditContext, { before: beforePayload, after: afterPayload, requestId });
   }
 
   private assignmentPayload(assignment: VehicleAssignment): Record<string, unknown> {
@@ -323,5 +331,41 @@ export class AsignacionesService {
 
   private requireAdmin(user: AuthUser) {
     if (!this.isAdmin(user)) throw new ForbiddenException('Se requiere rol ADMIN o ROOT');
+  }
+
+  private async emitRabbitEvent(
+    actionType: AssignmentAuditAction,
+    assignment: VehicleAssignment,
+    user: AuthUser,
+    auditContext?: AuditRequestContext,
+    datosExtra?: Record<string, any>,
+  ) {
+    let accion: AuditEvent['accion'] = 'UPDATE';
+    if (actionType === AssignmentAuditAction.CREACION) accion = 'CREATE';
+    else if (actionType === AssignmentAuditAction.ELIMINACION) accion = 'DELETE';
+
+    const event: AuditEvent = {
+      servicio: 'ms-asignaciones',
+      accion,
+      entidad: 'ASIGNACION',
+      datos: {
+        userId: assignment.userId,
+        vehicleId: assignment.vehicleId,
+        status: assignment.status,
+        ...datosExtra,
+      },
+      usuario: user.username,
+      rol: user.roles[0] ?? 'USER',
+      ip: this.normalizeIp(auditContext?.ip),
+      mac: '00:00:00:00:00:00',
+    };
+
+    await this.eventPublisher.publish(event);
+  }
+
+  private normalizeIp(ip?: string): string {
+    if (!ip || ip === '::1') return '127.0.0.1';
+    if (ip.startsWith('::ffff:')) return ip.replace('::ffff:', '');
+    return ip;
   }
 }

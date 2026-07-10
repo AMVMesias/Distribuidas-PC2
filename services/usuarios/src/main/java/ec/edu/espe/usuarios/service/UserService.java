@@ -21,9 +21,14 @@ import ec.edu.espe.usuarios.util.UsernameGenerator;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import jakarta.servlet.http.HttpServletRequest;
+import ec.edu.espe.usuarios.dto.AuditEvent;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -37,6 +42,8 @@ public class UserService {
 	private final DeactivationService deactivationService;
 	private final PasswordEncoder passwordEncoder;
 	private final EntityManager entityManager;
+	private final EventPublisherService eventPublisher;
+	private final HttpServletRequest request;
 
 	public UserService(
 			UserRepository userRepository,
@@ -46,7 +53,9 @@ public class UserService {
 			RoleService roleService,
 			DeactivationService deactivationService,
 			PasswordEncoder passwordEncoder,
-			EntityManager entityManager) {
+			EntityManager entityManager,
+			EventPublisherService eventPublisher,
+			HttpServletRequest request) {
 		this.userRepository = userRepository;
 		this.roleRepository = roleRepository;
 		this.userRoleRepository = userRoleRepository;
@@ -55,6 +64,8 @@ public class UserService {
 		this.deactivationService = deactivationService;
 		this.passwordEncoder = passwordEncoder;
 		this.entityManager = entityManager;
+		this.eventPublisher = eventPublisher;
+		this.request = request;
 	}
 
 	@Transactional(readOnly = true)
@@ -88,7 +99,9 @@ public class UserService {
 		user.setUsername(username);
 		user.setPasswordHash(passwordEncoder.encode(request.password()));
 		entityManager.persist(user);
-		return toResponse(user);
+		UserResponse response = toResponse(user);
+		emitRabbitEvent("CREATE", "USUARIO", response);
+		return response;
 	}
 
 	@Transactional
@@ -100,19 +113,23 @@ public class UserService {
 		if (password != null) {
 			user.setPasswordHash(passwordEncoder.encode(password));
 		}
-		return toResponse(user);
+		UserResponse response = toResponse(user);
+		emitRabbitEvent("UPDATE", "USUARIO", response);
+		return response;
 	}
 
 	@Transactional
 	public void delete(UUID id) {
-		findUser(id);
+		User user = findUser(id);
 		deactivationService.deactivateUserAndPersona(id);
+		emitRabbitEvent("DELETE", "USUARIO", Map.of("id", id, "username", user.getUsername()));
 	}
 
 	@Transactional
 	public void changePassword(UUID id, String newPassword) {
 		User user = findUser(id);
 		user.setPasswordHash(passwordEncoder.encode(newPassword));
+		emitRabbitEvent("UPDATE", "USUARIO_PASSWORD", Map.of("id", id, "username", user.getUsername()));
 	}
 
 	@Transactional
@@ -125,7 +142,9 @@ public class UserService {
 		UserRole userRole = userRoleRepository.findByUser_IdPersonAndRole_Id(userId, roleId)
 				.map(existing -> reactivateOrReject(existing, role))
 				.orElseGet(() -> new UserRole(user, role));
-		return toUserRoleResponse(userRoleRepository.save(userRole));
+		UserRoleResponse response = toUserRoleResponse(userRoleRepository.save(userRole));
+		emitRabbitEvent("CREATE", "USUARIO_ROL", response);
+		return response;
 	}
 
 	@Transactional(readOnly = true)
@@ -142,6 +161,7 @@ public class UserService {
 		UserRole userRole = userRoleRepository.findByUser_IdPersonAndRole_Id(userId, roleId)
 				.orElseThrow(() -> new NotFoundException("Asignación de rol no encontrada"));
 		userRole.setActive(false);
+		emitRabbitEvent("DELETE", "USUARIO_ROL", Map.of("userId", userId, "roleId", roleId));
 	}
 
 	User findUser(UUID id) {
@@ -196,5 +216,38 @@ public class UserService {
 				userRole.isActive(),
 				userRole.getAssignedAt(),
 				userRole.getUpdatedAt());
+	}
+
+	private void emitRabbitEvent(String accion, String entidad, Object datos) {
+		String username = "SYSTEM";
+		String rol = "USER";
+		var authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+			username = jwt.getClaimAsString("preferred_username");
+			if (username == null) username = jwt.getSubject();
+			List<String> roles = jwt.getClaimAsStringList("roles");
+			if (roles != null && !roles.isEmpty()) {
+				rol = String.join(",", roles);
+			}
+		}
+
+		String ip = "127.0.0.1";
+		if (request != null) {
+			ip = request.getRemoteAddr();
+			if (ip == null || "0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) ip = "127.0.0.1";
+			if (ip.startsWith("::ffff:")) ip = ip.replace("::ffff:", "");
+		}
+
+		AuditEvent event = AuditEvent.builder()
+				.servicio("ms-usuarios")
+				.accion(accion)
+				.entidad(entidad)
+				.datos(datos)
+				.usuario(username)
+				.rol(rol)
+				.ip(ip)
+				.mac("00:00:00:00:00:00")
+				.build();
+		eventPublisher.publish(event);
 	}
 }

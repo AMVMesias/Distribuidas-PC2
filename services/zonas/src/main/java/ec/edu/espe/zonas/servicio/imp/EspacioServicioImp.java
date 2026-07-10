@@ -23,6 +23,12 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import jakarta.servlet.http.HttpServletRequest;
+import ec.edu.espe.zonas.dtos.AuditEvent;
+import ec.edu.espe.zonas.servicio.EventPublisherService;
+
 @Service
 @RequiredArgsConstructor
 public class EspacioServicioImp implements EspacioServicio {
@@ -30,6 +36,8 @@ public class EspacioServicioImp implements EspacioServicio {
     private final EspacioRepositorio repositorioEspacio;
     private final ZonaRepositorio zonaRepositorio;
     private final UtilsMappers mapper;
+    private final EventPublisherService eventPublisher;
+    private final HttpServletRequest request;
 
     @Override
     @Transactional(readOnly = true)
@@ -84,7 +92,9 @@ public class EspacioServicioImp implements EspacioServicio {
 
         Espacio espacioSaved = guardarEspacio(nuevoEspacio);
 
-        return mapper.toResponseDto(espacioSaved);
+        EspaciosResponseDto response = mapper.toResponseDto(espacioSaved);
+        emitRabbitEvent("CREATE", "ESPACIO", response);
+        return response;
     }
 
     @Override
@@ -106,7 +116,9 @@ public class EspacioServicioImp implements EspacioServicio {
         espacio.setActivo(estado != EstadoEspacio.FUERA_DE_SERVICIO);
         espacio.setFechaActualizacion(LocalDateTime.now());
         Espacio espacioSaved = guardarEspacio(espacio);
-        return mapper.toResponseDto(espacioSaved);
+        EspaciosResponseDto response = mapper.toResponseDto(espacioSaved);
+        emitRabbitEvent("UPDATE", "ESPACIO", response);
+        return response;
     }
 
     @Override
@@ -146,5 +158,38 @@ public class EspacioServicioImp implements EspacioServicio {
             actual = actual.getCause();
         }
         return actual.getMessage() == null ? "La base de datos rechazo la operacion" : actual.getMessage();
+    }
+
+    private void emitRabbitEvent(String accion, String entidad, Object datos) {
+        String username = "SYSTEM";
+        String rol = "USER";
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            username = jwt.getClaimAsString("preferred_username");
+            if (username == null) username = jwt.getSubject();
+            List<String> roles = jwt.getClaimAsStringList("roles");
+            if (roles != null && !roles.isEmpty()) {
+                rol = String.join(",", roles);
+            }
+        }
+
+        String ip = "127.0.0.1";
+        if (request != null) {
+            ip = request.getRemoteAddr();
+            if (ip == null || "0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) ip = "127.0.0.1";
+            if (ip.startsWith("::ffff:")) ip = ip.replace("::ffff:", "");
+        }
+
+        AuditEvent event = AuditEvent.builder()
+                .servicio("ms-zonas")
+                .accion(accion)
+                .entidad(entidad)
+                .datos(datos)
+                .usuario(username)
+                .rol(rol)
+                .ip(ip)
+                .mac("00:00:00:00:00:00")
+                .build();
+        eventPublisher.publish(event);
     }
 }

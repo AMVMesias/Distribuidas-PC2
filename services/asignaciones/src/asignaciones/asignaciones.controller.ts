@@ -65,7 +65,7 @@ export class AsignacionesController {
     @Req() req: AuthenticatedRequest,
     @Headers('x-request-id') requestId?: string,
   ) {
-    return this.service.create(dto, req.user, requestId);
+    return this.service.create(dto, req.user, requestId, { ip: req.ip });
   }
 
   @Get('asignaciones')
@@ -108,7 +108,7 @@ export class AsignacionesController {
     @Req() req: AuthenticatedRequest,
     @Headers('x-request-id') requestId?: string,
   ) {
-    return this.service.remove(userId, vehicleId, req.user, requestId);
+    return this.service.remove(userId, vehicleId, req.user, requestId, { ip: req.ip });
   }
 
   @Put('asignaciones/vehiculos/:vehicleId/propietario')
@@ -137,7 +137,7 @@ export class AsignacionesController {
     @Req() req: AuthenticatedRequest,
     @Headers('x-request-id') requestId?: string,
   ) {
-    return this.service.transfer(vehicleId, dto, req.user, requestId);
+    return this.service.transfer(vehicleId, dto, req.user, requestId, { ip: req.ip });
   }
 
   @Get('propietarios/:userId/vehiculos')

@@ -5,6 +5,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.Map;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import jakarta.servlet.http.HttpServletRequest;
+import ec.edu.espe.zonas.dtos.AuditEvent;
+import ec.edu.espe.zonas.servicio.EventPublisherService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
@@ -35,6 +42,8 @@ public class ZonaServicioImpl implements ZonaServicio {
     private final ZonaRepositorio zonaRepositorio;
     private final EntityManager entityManager;
     private final UtilsMappers utilsMappers;
+    private final EventPublisherService eventPublisher;
+    private final HttpServletRequest request;
 
     @Override
     @Transactional(readOnly = true)
@@ -62,7 +71,9 @@ public class ZonaServicioImpl implements ZonaServicio {
         objZona.setFechaCreacion(ahora);
         objZona.setFechaModificacion(ahora);
 
-        return toResponse(guardarZona(objZona));
+        ZonaResponseDto response = toResponse(guardarZona(objZona));
+        emitRabbitEvent("CREATE", "ZONA", response);
+        return response;
     }
 
     @Override
@@ -83,7 +94,9 @@ public class ZonaServicioImpl implements ZonaServicio {
         objZona.setCapacidad(zona.getCapacidad());
         objZona.setFechaModificacion(LocalDateTime.now());
 
-        return toResponse(guardarZona(objZona));
+        ZonaResponseDto response = toResponse(guardarZona(objZona));
+        emitRabbitEvent("UPDATE", "ZONA", response);
+        return response;
     }
 
     @Override
@@ -92,9 +105,12 @@ public class ZonaServicioImpl implements ZonaServicio {
         ejecutarProcedureDesactivarZona(idZona);
         entityManager.clear();
 
-        return zonaRepositorio.findById(idZona)
+        ZonaResponseDto response = zonaRepositorio.findById(idZona)
                 .map(this::toResponse)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Zona no encontrada"));
+        
+        emitRabbitEvent("DELETE", "ZONA", response);
+        return response;
     }
 
     private ZonaResponseDto toResponse(Zona objZona) {
@@ -194,5 +210,38 @@ public class ZonaServicioImpl implements ZonaServicio {
             actual = actual.getCause();
         }
         return actual.getMessage() == null ? "La base de datos rechazo la operacion" : actual.getMessage();
+    }
+
+    private void emitRabbitEvent(String accion, String entidad, Object datos) {
+        String username = "SYSTEM";
+        String rol = "USER";
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            username = jwt.getClaimAsString("preferred_username");
+            if (username == null) username = jwt.getSubject();
+            List<String> roles = jwt.getClaimAsStringList("roles");
+            if (roles != null && !roles.isEmpty()) {
+                rol = String.join(",", roles);
+            }
+        }
+
+        String ip = "127.0.0.1";
+        if (request != null) {
+            ip = request.getRemoteAddr();
+            if (ip == null || "0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) ip = "127.0.0.1";
+            if (ip.startsWith("::ffff:")) ip = ip.replace("::ffff:", "");
+        }
+
+        AuditEvent event = AuditEvent.builder()
+                .servicio("ms-zonas")
+                .accion(accion)
+                .entidad(entidad)
+                .datos(datos)
+                .usuario(username)
+                .rol(rol)
+                .ip(ip)
+                .mac("00:00:00:00:00:00")
+                .build();
+        eventPublisher.publish(event);
     }
 }
