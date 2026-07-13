@@ -118,7 +118,7 @@ export class VehiculosService {
     vehiculo: Vehiculo,
     user: AuthUser,
     auditContext?: AuditRequestContext,
-    datosExtra?: Record<string, any>,
+    datosExtra?: Record<string, unknown>,
   ) {
     const event: AuditEvent = {
       servicio: 'ms-vehiculos',
@@ -138,7 +138,6 @@ export class VehiculosService {
       usuario: user.username,
       rol: user.roles[0] ?? 'USER',
       ip: this.normalizeIp(auditContext?.ip),
-      mac: '00:00:00:00:00:00',
     };
 
     await this.eventPublisher.publish(event);

@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuditModule } from './audit/audit.module';
 import { EventoAuditoria } from './audit/entities/evento-auditoria.entity';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -12,11 +14,11 @@ import { EventoAuditoria } from './audit/entities/evento-auditoria.entity';
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
-        host: config.get('DB_HOST'),
-        port: +config.get('DB_PORT'),
-        username: config.get('DB_USER'),
-        password: config.get('DB_PASSWORD'),
-        database: config.get('DB_NAME'),
+        host: config.get('DB_HOST', 'localhost'),
+        port: Number(config.get('DB_PORT', '5432')),
+        username: config.get('DB_USER', 'postgres'),
+        password: config.get('DB_PASSWORD', 'postgres'),
+        database: config.get('DB_NAME', 'auditoria'),
         entities: [EventoAuditoria],
         synchronize: true,
         logging: false,
@@ -28,8 +30,8 @@ import { EventoAuditoria } from './audit/entities/evento-auditoria.entity';
       useFactory: (config: ConfigService) => ({
         throttlers: [
           {
-            ttl: +config.get('THROTTLE_TTL'),
-            limit: +config.get('THROTTLE_LIMIT'),
+            ttl: Number(config.get('THROTTLE_TTL', '60000')),
+            limit: Number(config.get('THROTTLE_LIMIT', '100')),
           },
         ],
       }),
@@ -37,5 +39,7 @@ import { EventoAuditoria } from './audit/entities/evento-auditoria.entity';
     }),
     AuditModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

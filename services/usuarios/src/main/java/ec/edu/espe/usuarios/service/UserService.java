@@ -21,6 +21,7 @@ import ec.edu.espe.usuarios.util.UsernameGenerator;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,7 @@ public class UserService {
 	private final DeactivationService deactivationService;
 	private final PasswordEncoder passwordEncoder;
 	private final EntityManager entityManager;
+	private final EventPublisherService eventPublisher;
 
 	public UserService(
 			UserRepository userRepository,
@@ -46,7 +48,8 @@ public class UserService {
 			RoleService roleService,
 			DeactivationService deactivationService,
 			PasswordEncoder passwordEncoder,
-			EntityManager entityManager) {
+			EntityManager entityManager,
+			EventPublisherService eventPublisher) {
 		this.userRepository = userRepository;
 		this.roleRepository = roleRepository;
 		this.userRoleRepository = userRoleRepository;
@@ -55,6 +58,7 @@ public class UserService {
 		this.deactivationService = deactivationService;
 		this.passwordEncoder = passwordEncoder;
 		this.entityManager = entityManager;
+		this.eventPublisher = eventPublisher;
 	}
 
 	@Transactional(readOnly = true)
@@ -88,7 +92,9 @@ public class UserService {
 		user.setUsername(username);
 		user.setPasswordHash(passwordEncoder.encode(request.password()));
 		entityManager.persist(user);
-		return toResponse(user);
+		UserResponse response = toResponse(user);
+		eventPublisher.publish("CREATE", "USUARIO", response);
+		return response;
 	}
 
 	@Transactional
@@ -100,19 +106,23 @@ public class UserService {
 		if (password != null) {
 			user.setPasswordHash(passwordEncoder.encode(password));
 		}
-		return toResponse(user);
+		UserResponse response = toResponse(user);
+		eventPublisher.publish("UPDATE", "USUARIO", response);
+		return response;
 	}
 
 	@Transactional
 	public void delete(UUID id) {
-		findUser(id);
+		User user = findUser(id);
 		deactivationService.deactivateUserAndPersona(id);
+		eventPublisher.publish("DELETE", "USUARIO", Map.of("id", id, "username", user.getUsername()));
 	}
 
 	@Transactional
 	public void changePassword(UUID id, String newPassword) {
 		User user = findUser(id);
 		user.setPasswordHash(passwordEncoder.encode(newPassword));
+		eventPublisher.publish("UPDATE", "USUARIO_PASSWORD", Map.of("id", id, "username", user.getUsername()));
 	}
 
 	@Transactional
@@ -125,7 +135,9 @@ public class UserService {
 		UserRole userRole = userRoleRepository.findByUser_IdPersonAndRole_Id(userId, roleId)
 				.map(existing -> reactivateOrReject(existing, role))
 				.orElseGet(() -> new UserRole(user, role));
-		return toUserRoleResponse(userRoleRepository.save(userRole));
+		UserRoleResponse response = toUserRoleResponse(userRoleRepository.save(userRole));
+		eventPublisher.publish("CREATE", "USUARIO_ROL", response);
+		return response;
 	}
 
 	@Transactional(readOnly = true)
@@ -142,6 +154,7 @@ public class UserService {
 		UserRole userRole = userRoleRepository.findByUser_IdPersonAndRole_Id(userId, roleId)
 				.orElseThrow(() -> new NotFoundException("Asignación de rol no encontrada"));
 		userRole.setActive(false);
+		eventPublisher.publish("DELETE", "USUARIO_ROL", Map.of("userId", userId, "roleId", roleId));
 	}
 
 	User findUser(UUID id) {
@@ -197,4 +210,5 @@ public class UserService {
 				userRole.getAssignedAt(),
 				userRole.getUpdatedAt());
 	}
+
 }

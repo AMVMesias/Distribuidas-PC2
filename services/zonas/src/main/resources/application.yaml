@@ -17,7 +17,13 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
 server:
+  forward-headers-strategy: framework
   error:
     include-message: always
     include-binding-errors: always
@@ -31,6 +37,9 @@ management:
     health:
       probes:
         enabled: true
+  health:
+    rabbit:
+      enabled: false
 springdoc:
   swagger-ui:
     config-url: /zonas/v3/api-docs/swagger-config
@@ -44,3 +53,7 @@ app:
     audience: ${JWT_AUDIENCE:parking-api}
   internal:
     service-token: ${INTERNAL_SERVICE_TOKEN:change-me-internal-token}
+  rabbitmq:
+    audit:
+      exchange: ${RABBITMQ_EXCHANGE:audit_exchange}
+      routing-key: ${RABBITMQ_ROUTING_KEY:audit_event}

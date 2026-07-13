@@ -34,7 +34,7 @@ export class TicketsController {
   @ApiResponse({ status: 404, description: 'Vehículo, asignación o espacio no encontrado' })
   @ApiResponse({ status: 409, description: 'Vehículo con ticket activo o espacio no disponible' })
   create(@Body() dto: CreateTicketDto, @Req() req: AuthenticatedRequest) {
-    return this.service.create(dto, req.user);
+    return this.service.create(dto, req.user, { ip: req.ip });
   }
 
   @Get()
@@ -65,7 +65,7 @@ export class TicketsController {
   @ApiResponse({ status: 404, description: 'Ticket no encontrado' })
   @ApiResponse({ status: 409, description: 'Ticket no está activo' })
   pay(@Param('id', ticketUuidPipe()) id: string, @Req() req: AuthenticatedRequest, @Headers('x-request-id') requestId?: string) {
-    return this.service.pay(id, req.user, requestId);
+    return this.service.pay(id, req.user, { ip: req.ip });
   }
 
   @Patch(':id/cancelar')
@@ -76,7 +76,7 @@ export class TicketsController {
   @ApiResponse({ status: 404, description: 'Ticket no encontrado' })
   @ApiResponse({ status: 409, description: 'Ticket no está activo' })
   cancel(@Param('id', ticketUuidPipe()) id: string, @Req() req: AuthenticatedRequest) {
-    return this.service.cancel(id, req.user);
+    return this.service.cancel(id, req.user, { ip: req.ip });
   }
 }
 

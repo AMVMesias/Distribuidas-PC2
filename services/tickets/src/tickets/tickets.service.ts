@@ -8,6 +8,7 @@ import { InternalClients, InternalSpace, InternalVehicle } from './clients/inter
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { ListTicketsQueryDto } from './dto/list-tickets-query.dto';
 import { Ticket, TicketStatus } from './entities/ticket.entity';
+import { EventPublisherService, AuditRequestContext, AuditEvent } from './event-publisher.service';
 
 @Injectable()
 export class TicketsService {
@@ -15,9 +16,10 @@ export class TicketsService {
     @InjectRepository(Ticket) private readonly tickets: Repository<Ticket>,
     private readonly clients: InternalClients,
     private readonly config: ConfigService,
+    private readonly eventPublisher: EventPublisherService,
   ) {}
 
-  async create(dto: CreateTicketDto, actor: AuthUser) {
+  async create(dto: CreateTicketDto, actor: AuthUser, auditContext?: AuditRequestContext) {
     this.requireOperator(actor);
     if (!dto.idVehiculo && !dto.placa) {
       throw new BadRequestException('Debes enviar idVehiculo o placa para emitir el ticket');
@@ -58,7 +60,9 @@ export class TicketsService {
 
     await this.clients.setSpaceStatus(space.id, 'OCUPADO');
     try {
-      return await this.tickets.save(ticket);
+      const saved = await this.tickets.save(ticket);
+      await this.emitRabbitEvent('CREATE', saved, actor, auditContext);
+      return saved;
     } catch (error) {
       await this.releaseSpaceQuietly(space.id);
       throw new ConflictException('No se pudo emitir el ticket porque el vehículo ya tiene un ticket activo o el código se repitió');
@@ -89,7 +93,7 @@ export class TicketsService {
     return ticket;
   }
 
-  async pay(id: string, actor: AuthUser, requestId?: string) {
+  async pay(id: string, actor: AuthUser, auditContext?: AuditRequestContext) {
     this.requireOperator(actor);
     const ticket = await this.findActiveTicket(id);
     const now = new Date();
@@ -99,10 +103,11 @@ export class TicketsService {
     ticket.updatedAt = now;
     const saved = await this.tickets.save(ticket);
     await this.clients.setSpaceStatus(saved.idEspacio, 'DISPONIBLE');
+    await this.emitRabbitEvent('UPDATE', saved, actor, auditContext);
     return saved;
   }
 
-  async cancel(id: string, actor: AuthUser) {
+  async cancel(id: string, actor: AuthUser, auditContext?: AuditRequestContext) {
     this.requireOperator(actor);
     const ticket = await this.findActiveTicket(id);
     ticket.fechaHoraSalida = new Date();
@@ -111,6 +116,7 @@ export class TicketsService {
     ticket.updatedAt = ticket.fechaHoraSalida;
     const saved = await this.tickets.save(ticket);
     await this.clients.setSpaceStatus(saved.idEspacio, 'DISPONIBLE');
+    await this.emitRabbitEvent('UPDATE', saved, actor, auditContext);
     return saved;
   }
 
@@ -202,5 +208,36 @@ export class TicketsService {
     } catch {
       // La respuesta principal debe explicar el error de ticket, no ocultarlo por una compensación fallida.
     }
+  }
+
+  private async emitRabbitEvent(
+    accion: AuditEvent['accion'],
+    ticket: Ticket,
+    user: AuthUser,
+    auditContext?: AuditRequestContext,
+  ) {
+    const event: AuditEvent = {
+      servicio: 'ms-tickets',
+      accion,
+      entidad: 'TICKET',
+      datos: {
+        id: ticket.id,
+        codigo: ticket.codigo,
+        estado: ticket.estado,
+        idVehiculo: ticket.idVehiculo,
+        idEspacio: ticket.idEspacio,
+      },
+      usuario: user.username,
+      rol: user.roles[0] ?? 'USER',
+      ip: this.normalizeIp(auditContext?.ip),
+    };
+
+    await this.eventPublisher.publish(event);
+  }
+
+  private normalizeIp(ip?: string): string {
+    if (!ip || ip === '::1') return '127.0.0.1';
+    if (ip.startsWith('::ffff:')) return ip.replace('::ffff:', '');
+    return ip;
   }
 }

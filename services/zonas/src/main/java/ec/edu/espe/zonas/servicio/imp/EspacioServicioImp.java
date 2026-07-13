@@ -23,6 +23,8 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import ec.edu.espe.zonas.servicio.EventPublisherService;
+
 @Service
 @RequiredArgsConstructor
 public class EspacioServicioImp implements EspacioServicio {
@@ -30,6 +32,7 @@ public class EspacioServicioImp implements EspacioServicio {
     private final EspacioRepositorio repositorioEspacio;
     private final ZonaRepositorio zonaRepositorio;
     private final UtilsMappers mapper;
+    private final EventPublisherService eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -84,7 +87,9 @@ public class EspacioServicioImp implements EspacioServicio {
 
         Espacio espacioSaved = guardarEspacio(nuevoEspacio);
 
-        return mapper.toResponseDto(espacioSaved);
+        EspaciosResponseDto response = mapper.toResponseDto(espacioSaved);
+        eventPublisher.publish("CREATE", "ESPACIO", response);
+        return response;
     }
 
     @Override
@@ -106,7 +111,9 @@ public class EspacioServicioImp implements EspacioServicio {
         espacio.setActivo(estado != EstadoEspacio.FUERA_DE_SERVICIO);
         espacio.setFechaActualizacion(LocalDateTime.now());
         Espacio espacioSaved = guardarEspacio(espacio);
-        return mapper.toResponseDto(espacioSaved);
+        EspaciosResponseDto response = mapper.toResponseDto(espacioSaved);
+        eventPublisher.publish("UPDATE", "ESPACIO", response);
+        return response;
     }
 
     @Override
@@ -147,4 +154,5 @@ public class EspacioServicioImp implements EspacioServicio {
         }
         return actual.getMessage() == null ? "La base de datos rechazo la operacion" : actual.getMessage();
     }
+
 }

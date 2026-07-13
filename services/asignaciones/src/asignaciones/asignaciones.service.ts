@@ -15,6 +15,15 @@ import { ListAuditQueryDto } from './dto/list-audit-query.dto';
 import { TransferAssignmentDto } from './dto/transfer-assignment.dto';
 import { AssignmentAuditAction, AssignmentAuditEvent } from './entities/assignment-audit-event.entity';
 import { AssignmentStatus, VehicleAssignment } from './entities/vehicle-assignment.entity';
+import { EventPublisherService, AuditRequestContext, AuditEvent } from './event-publisher.service';
+
+interface PendingAuditEvent {
+  action: AssignmentAuditAction;
+  assignment: VehicleAssignment;
+  actor: AuthUser;
+  context?: AuditRequestContext;
+  data?: Record<string, unknown>;
+}
 
 @Injectable()
 export class AsignacionesService {
@@ -25,14 +34,16 @@ export class AsignacionesService {
     private readonly auditEvents: Repository<AssignmentAuditEvent>,
     private readonly dataSource: DataSource,
     private readonly clients: InternalClients,
+    private readonly eventPublisher: EventPublisherService,
   ) {}
 
-  async create(dto: CreateAssignmentDto, actor: AuthUser, requestId?: string) {
+  async create(dto: CreateAssignmentDto, actor: AuthUser, requestId?: string, auditContext?: AuditRequestContext) {
     const targetUserId = this.resolveTargetUser(dto.userId, actor);
     await this.ensureActiveUser(targetUserId);
     await this.clients.getVehicle(dto.vehicleId);
 
-    return this.dataSource.transaction(async (manager) => {
+    const pending: PendingAuditEvent[] = [];
+    const result = await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(VehicleAssignment);
       const active = await repo.findOne({ where: { vehicleId: dto.vehicleId, status: AssignmentStatus.ACTIVE } });
 
@@ -71,8 +82,17 @@ export class AsignacionesService {
         this.assignmentPayload(saved),
         requestId,
       );
+      pending.push({
+        action: existing ? AssignmentAuditAction.MODIFICACION : AssignmentAuditAction.CREACION,
+        assignment: saved,
+        actor,
+        context: auditContext,
+        data: { before, after: this.assignmentPayload(saved), requestId },
+      });
       return saved;
     });
+    await this.publishPending(pending);
+    return result;
   }
 
   async findAll(query: ListAssignmentsQueryDto, actor: AuthUser) {
@@ -103,12 +123,13 @@ export class AsignacionesService {
     return assignment;
   }
 
-  async remove(userId: string, vehicleId: string, actor: AuthUser, requestId?: string) {
+  async remove(userId: string, vehicleId: string, actor: AuthUser, requestId?: string, auditContext?: AuditRequestContext) {
     if (!this.isAdmin(actor) && userId !== actor.userId) {
       throw new ForbiddenException('No puedes eliminar asignaciones de otro propietario');
     }
 
-    return this.dataSource.transaction(async (manager) => {
+    const pending: PendingAuditEvent[] = [];
+    const result = await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(VehicleAssignment);
       const assignment = await repo.findOne({ where: { userId, vehicleId } });
       if (!assignment || assignment.status !== AssignmentStatus.ACTIVE) {
@@ -132,16 +153,26 @@ export class AsignacionesService {
         this.assignmentPayload(saved),
         requestId,
       );
+      pending.push({
+        action: AssignmentAuditAction.ELIMINACION,
+        assignment: saved,
+        actor,
+        context: auditContext,
+        data: { before, after: this.assignmentPayload(saved), requestId },
+      });
       return saved;
     });
+    await this.publishPending(pending);
+    return result;
   }
 
-  async transfer(vehicleId: string, dto: TransferAssignmentDto, actor: AuthUser, requestId?: string) {
+  async transfer(vehicleId: string, dto: TransferAssignmentDto, actor: AuthUser, requestId?: string, auditContext?: AuditRequestContext) {
     this.requireAdmin(actor);
     await this.ensureActiveUser(dto.userId);
     await this.clients.getVehicle(vehicleId);
 
-    return this.dataSource.transaction(async (manager) => {
+    const pending: PendingAuditEvent[] = [];
+    const result = await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(VehicleAssignment);
       const active = await repo.findOne({ where: { vehicleId, status: AssignmentStatus.ACTIVE } });
       if (active?.userId === dto.userId) {
@@ -165,6 +196,13 @@ export class AsignacionesService {
           this.assignmentPayload(inactive),
           requestId,
         );
+        pending.push({
+          action: AssignmentAuditAction.MODIFICACION,
+          assignment: inactive,
+          actor,
+          context: auditContext,
+          data: { before: beforeActive, after: this.assignmentPayload(inactive), requestId },
+        });
       }
 
       const target = await repo.findOne({ where: { userId: dto.userId, vehicleId } });
@@ -193,8 +231,17 @@ export class AsignacionesService {
         this.assignmentPayload(saved),
         requestId,
       );
+      pending.push({
+        action: target ? AssignmentAuditAction.MODIFICACION : AssignmentAuditAction.CREACION,
+        assignment: saved,
+        actor,
+        context: auditContext,
+        data: { before: beforeTarget, after: this.assignmentPayload(saved), requestId },
+      });
       return saved;
     });
+    await this.publishPending(pending);
+    return result;
   }
 
   async findFleet(userId: string, actor: AuthUser) {
@@ -323,5 +370,46 @@ export class AsignacionesService {
 
   private requireAdmin(user: AuthUser) {
     if (!this.isAdmin(user)) throw new ForbiddenException('Se requiere rol ADMIN o ROOT');
+  }
+
+  private async emitRabbitEvent(
+    actionType: AssignmentAuditAction,
+    assignment: VehicleAssignment,
+    user: AuthUser,
+    auditContext?: AuditRequestContext,
+    datosExtra?: Record<string, unknown>,
+  ) {
+    let accion: AuditEvent['accion'] = 'UPDATE';
+    if (actionType === AssignmentAuditAction.CREACION) accion = 'CREATE';
+    else if (actionType === AssignmentAuditAction.ELIMINACION) accion = 'DELETE';
+
+    const event: AuditEvent = {
+      servicio: 'ms-asignaciones',
+      accion,
+      entidad: 'ASIGNACION',
+      datos: {
+        userId: assignment.userId,
+        vehicleId: assignment.vehicleId,
+        status: assignment.status,
+        ...datosExtra,
+      },
+      usuario: user.username,
+      rol: user.roles[0] ?? 'USER',
+      ip: this.normalizeIp(auditContext?.ip),
+    };
+
+    await this.eventPublisher.publish(event);
+  }
+
+  private async publishPending(events: PendingAuditEvent[]): Promise<void> {
+    for (const event of events) {
+      await this.emitRabbitEvent(event.action, event.assignment, event.actor, event.context, event.data);
+    }
+  }
+
+  private normalizeIp(ip?: string): string {
+    if (!ip || ip === '::1') return '127.0.0.1';
+    if (ip.startsWith('::ffff:')) return ip.replace('::ffff:', '');
+    return ip;
   }
 }

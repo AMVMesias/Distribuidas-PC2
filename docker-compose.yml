@@ -74,6 +74,37 @@ services:
       timeout: 5s
       retries: 20
 
+  audit-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${AUDIT_DB}
+    volumes:
+      - audit-data:/var/lib/postgresql/data
+    networks: [audit-db]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${AUDIT_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks: [gateway]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   usuarios:
     build: ./services/usuarios
     environment:
@@ -93,6 +124,12 @@ services:
       ADMIN_LAST_NAME: ${ADMIN_LAST_NAME}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_EXCHANGE: audit_exchange
+      RABBITMQ_ROUTING_KEY: audit_event
     volumes:
       - ./.secrets/jwt-private.pem:/run/secrets/jwt-private.pem:ro
       - ./.secrets/jwt-public.pem:/run/secrets/jwt-public.pem:ro
@@ -115,6 +152,12 @@ services:
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_AUDIENCE: ${JWT_AUDIENCE}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_EXCHANGE: audit_exchange
+      RABBITMQ_ROUTING_KEY: audit_event
     volumes:
       - ./.secrets/jwt-public.pem:/run/secrets/jwt-public.pem:ro
     networks: [gateway, zonas-db]
@@ -138,6 +181,12 @@ services:
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_AUDIENCE: ${JWT_AUDIENCE}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_EXCHANGE: audit_exchange
+      RABBITMQ_ROUTING_KEY: audit_event
     volumes:
       - ./.secrets/jwt-public.pem:/run/secrets/jwt-public.pem:ro
     networks: [gateway, vehiculos-db]
@@ -163,6 +212,12 @@ services:
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
       USUARIOS_INTERNAL_URL: http://usuarios:8080
       VEHICULOS_INTERNAL_URL: http://vehiculos:3000
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_EXCHANGE: audit_exchange
+      RABBITMQ_ROUTING_KEY: audit_event
     volumes:
       - ./.secrets/jwt-public.pem:/run/secrets/jwt-public.pem:ro
     networks: [gateway, asignaciones-db]
@@ -198,6 +253,12 @@ services:
       TICKET_SPACE_FACTOR_MOTO: ${TICKET_SPACE_FACTOR_MOTO}
       TICKET_SPACE_FACTOR_AUTO: ${TICKET_SPACE_FACTOR_AUTO}
       TICKET_SPACE_FACTOR_BUS: ${TICKET_SPACE_FACTOR_BUS}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_EXCHANGE: audit_exchange
+      RABBITMQ_ROUTING_KEY: audit_event
     volumes:
       - ./.secrets/jwt-public.pem:/run/secrets/jwt-public.pem:ro
     networks: [gateway, tickets-db]
@@ -208,6 +269,31 @@ services:
       asignaciones: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  ms-audit:
+    build: ./services/ms-audit
+    environment:
+      DB_HOST: audit-db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${AUDIT_DB}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_QUEUE: audit_queue
+      RABBITMQ_EXCHANGE: audit_exchange
+      RABBITMQ_ROUTING_KEY: audit_event
+      RABBITMQ_DEAD_LETTER_EXCHANGE: audit_dead_exchange
+    networks: [gateway, audit-db]
+    depends_on:
+      audit-db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -256,6 +342,8 @@ volumes:
   vehiculos-data:
   asignaciones-data:
   tickets-data:
+  audit-data:
+  rabbitmq-data:
 
 networks:
   gateway:
@@ -268,4 +356,6 @@ networks:
   asignaciones-db:
     internal: true
   tickets-db:
+    internal: true
+  audit-db:
     internal: true

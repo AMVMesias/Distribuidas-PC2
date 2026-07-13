@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import ec.edu.espe.zonas.servicio.EventPublisherService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
@@ -35,6 +36,7 @@ public class ZonaServicioImpl implements ZonaServicio {
     private final ZonaRepositorio zonaRepositorio;
     private final EntityManager entityManager;
     private final UtilsMappers utilsMappers;
+    private final EventPublisherService eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -62,7 +64,9 @@ public class ZonaServicioImpl implements ZonaServicio {
         objZona.setFechaCreacion(ahora);
         objZona.setFechaModificacion(ahora);
 
-        return toResponse(guardarZona(objZona));
+        ZonaResponseDto response = toResponse(guardarZona(objZona));
+        eventPublisher.publish("CREATE", "ZONA", response);
+        return response;
     }
 
     @Override
@@ -83,7 +87,9 @@ public class ZonaServicioImpl implements ZonaServicio {
         objZona.setCapacidad(zona.getCapacidad());
         objZona.setFechaModificacion(LocalDateTime.now());
 
-        return toResponse(guardarZona(objZona));
+        ZonaResponseDto response = toResponse(guardarZona(objZona));
+        eventPublisher.publish("UPDATE", "ZONA", response);
+        return response;
     }
 
     @Override
@@ -92,9 +98,12 @@ public class ZonaServicioImpl implements ZonaServicio {
         ejecutarProcedureDesactivarZona(idZona);
         entityManager.clear();
 
-        return zonaRepositorio.findById(idZona)
+        ZonaResponseDto response = zonaRepositorio.findById(idZona)
                 .map(this::toResponse)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Zona no encontrada"));
+
+        eventPublisher.publish("DELETE", "ZONA", response);
+        return response;
     }
 
     private ZonaResponseDto toResponse(Zona objZona) {
@@ -195,4 +204,5 @@ public class ZonaServicioImpl implements ZonaServicio {
         }
         return actual.getMessage() == null ? "La base de datos rechazo la operacion" : actual.getMessage();
     }
+
 }

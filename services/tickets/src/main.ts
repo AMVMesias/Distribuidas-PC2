@@ -4,9 +4,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ApiErrorFilter } from './common/api-error.filter';
 import { validationExceptionFactory } from './common/validation-exception.factory';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.set('trust proxy', 1);
   app.useGlobalFilters(new ApiErrorFilter());
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,

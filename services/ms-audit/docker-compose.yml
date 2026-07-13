@@ -1,45 +1,57 @@
-version: '3.8'
-
 services:
   audit-db:
     image: postgres:16-alpine
-    container_name: postgres-audit
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-auditoria}
     ports:
-      - "${DB_PORT}:5432"
+      - "${DB_EXTERNAL_PORT:-5436}:5432"
     volumes:
       - audit-db-data:/var/lib/postgresql/data
-    networks:
-      - audit-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-auditoria}"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
 
   rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq-audit
+    image: rabbitmq:3-management-alpine
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-audit}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-audit}
     ports:
-      - "${RABBITMQ_PORT}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
-    networks:
-      - audit-net
+      - "${RABBITMQ_EXTERNAL_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
+
+  ms-audit:
+    build: .
+    environment:
+      DB_HOST: audit-db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-auditoria}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-audit}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-audit}
+      RABBITMQ_QUEUE: audit_queue
+      RABBITMQ_EXCHANGE: audit_exchange
+      RABBITMQ_ROUTING_KEY: audit_event
+      RABBITMQ_DEAD_LETTER_EXCHANGE: audit_dead_exchange
+    ports:
+      - "${AUDIT_HTTP_PORT:-3001}:3000"
+    depends_on:
+      audit-db: { condition: service_healthy }
 
 volumes:
   audit-db-data:
-
-networks:
-  audit-net:
-    driver: bridge
+  rabbitmq-data:
