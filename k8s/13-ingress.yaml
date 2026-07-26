@@ -35,6 +35,10 @@ spec:
             pathType: Prefix
             backend:
               service: { name: kong, port: { number: 8000 } }
+          - path: /sse
+            pathType: Prefix
+            backend:
+              service: { name: kong, port: { number: 8000 } }
           - path: /
             pathType: Prefix
             backend:

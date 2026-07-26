@@ -35,9 +35,10 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: rabbitmq
-          image: rabbitmq:3-alpine
+          image: rabbitmq:3-management-alpine
           ports:
             - { name: amqp, containerPort: 5672 }
+            - { name: management, containerPort: 15672 }
           env:
             - name: RABBITMQ_DEFAULT_USER
               valueFrom: { secretKeyRef: { name: parking-secrets, key: RABBITMQ_USER } }
@@ -71,3 +72,4 @@ spec:
   selector: { app: rabbitmq }
   ports:
     - { name: amqp, port: 5672, targetPort: amqp }
+    - { name: management, port: 15672, targetPort: management }

@@ -18,6 +18,17 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
     if (!loading && !session) router.replace(`/${locale}/login`);
   }, [loading, locale, router, session]);
 
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      if (!loading && !session) {
+        window.location.replace(`/${locale}`);
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [loading, session, locale]);
+
   if (loading || !session) {
     return <main className="grid min-h-screen place-items-center"><LoaderCircle className="animate-spin text-[var(--brand)]" size={30} /></main>;
   }

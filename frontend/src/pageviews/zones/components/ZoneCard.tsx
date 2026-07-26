@@ -1,6 +1,8 @@
+'use client';
+
 import Image, { StaticImageData } from 'next/image';
 import { MapPin, Plus } from 'lucide-react';
-import { Zone } from '@/entities/parking/model/parking.types';
+import { Ticket, Zone } from '@/entities/parking/model/parking.types';
 import { StatusBadge } from '@/shared/components/StatusBadge';
 import centralImage from '@/shared/assets/place-central.png';
 import alamedaImage from '@/shared/assets/place-alameda.png';
@@ -12,9 +14,10 @@ function zoneImage(zone: Zone): StaticImageData {
   return riberaImage;
 }
 
-export function ZoneCard({ zone, canEdit, addSpace, changeStatus }: {
+export function ZoneCard({ zone, canEdit, addSpace, changeStatus, ticketMap }: {
   zone: Zone; canEdit: boolean; addSpace: () => void;
   changeStatus: (spaceId: string, status: string) => void;
+  ticketMap?: Map<string, Ticket>;
 }) {
   const spaces = zone.espacios ?? [];
   const available = spaces.filter(space => space.estado === 'DISPONIBLE').length;
@@ -43,16 +46,31 @@ export function ZoneCard({ zone, canEdit, addSpace, changeStatus }: {
         {canEdit && <button className="secondary-button min-h-10 px-4" onClick={addSpace}><Plus size={16} />Añadir espacio</button>}
       </header>
       <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
-        {spaces.map(space => (
-          <section key={space.id} className="soft-card p-4">
-            <div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{space.codigo}</p><p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{space.tipo} · Cap. {space.capacidad}</p></div><StatusBadge status={space.estado} /></div>
-            {canEdit && (
-              <select className="field mt-4 min-h-10 text-xs" value={space.estado} onChange={event => changeStatus(space.id, event.target.value)} aria-label={`Estado de ${space.codigo}`}>
-                <option>DISPONIBLE</option><option>RESERVADO</option><option>FUERA_DE_SERVICIO</option><option>OCUPADO</option>
-              </select>
-            )}
-          </section>
-        ))}
+        {spaces.map(space => {
+          const activeTicket = canEdit ? (ticketMap?.get(space.id) ?? ticketMap?.get(space.codigo)) : undefined;
+          return (
+            <section key={space.id} className="soft-card p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold">{space.codigo}</p>
+                  <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{space.tipo} · Cap. {space.capacidad}</p>
+                  {activeTicket && (
+                    <div className="mt-2 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 border border-red-500/20">
+                      🚗 {activeTicket.placaVehiculo}
+                      <p className="text-[10px] font-normal opacity-80">{activeTicket.codigo}</p>
+                    </div>
+                  )}
+                </div>
+                <StatusBadge status={space.estado} />
+              </div>
+              {canEdit && (
+                <select className="field mt-4 min-h-10 text-xs" value={space.estado} onChange={event => changeStatus(space.id, event.target.value)} aria-label={`Estado de ${space.codigo}`}>
+                  <option>DISPONIBLE</option><option>RESERVADO</option><option>FUERA_DE_SERVICIO</option><option>OCUPADO</option>
+                </select>
+              )}
+            </section>
+          );
+        })}
         {!spaces.length && <p className="py-5 text-sm" style={{ color: 'var(--muted)' }}>Esta zona todavía no tiene espacios registrados.</p>}
       </div>
     </article>

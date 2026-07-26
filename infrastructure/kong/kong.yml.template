@@ -139,7 +139,7 @@ services:
     retries: 2
     routes:
       - name: tickets-sse
-        paths: ["~/sse/espacios$"]
+        paths: ["/sse/espacios"]
         methods: [GET]
         strip_path: false
       - name: tickets-api

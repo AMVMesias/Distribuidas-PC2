@@ -1,7 +1,6 @@
 'use client';
 
 import { LogOut, Menu } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/shared/components/ThemeToggle';
 import { LanguageToggle } from '@/shared/components/LanguageToggle';
 import { useAuth } from '@/features/auth/model/AuthContext';
@@ -10,14 +9,11 @@ import { useI18n } from '@/shared/i18n/I18nContext';
 export function PortalHeader({ openMenu }: { openMenu: () => void }) {
   const { user, logout } = useAuth();
   const { dictionary, locale } = useI18n();
-  const router = useRouter();
 
   const exit = async () => {
-    const homeHref = `/${locale}`;
     const loginHref = `/${locale}/login`;
-    window.history.replaceState({ ...window.history.state }, '', homeHref);
     await logout();
-    window.location.assign(loginHref);
+    window.location.replace(loginHref);
   };
 
   return (
