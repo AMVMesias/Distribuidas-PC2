@@ -138,6 +138,10 @@ services:
     write_timeout: 30000
     retries: 2
     routes:
+      - name: tickets-sse
+        paths: ["~/sse/espacios$"]
+        methods: [GET]
+        strip_path: false
       - name: tickets-api
         paths: ["~/api/v1/tickets"]
         strip_path: false

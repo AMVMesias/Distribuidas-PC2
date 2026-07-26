@@ -24,7 +24,6 @@
 - [Requisitos](#-requisitos)
 - [Archivos de configuración clave](#-archivos-de-configuración-clave)
 - [Inicio rápido](#-inicio-rápido)
-- [Cliente web](#-cliente-web)
 - [API pública](#-api-pública)
 - [Documentación interactiva](#-documentación-interactiva)
 - [Modelo de datos](#-modelo-de-datos)
@@ -45,7 +44,6 @@ Plataforma distribuida de gestión de parking con cinco microservicios independi
 |---|---|---|---|
 | **Swagger UI centralizado (los 5 servicios)** | **<http://localhost:8000/asignaciones/swagger-ui>** | Host / navegador | **Forma recomendada de explorar y probar la API.** |
 | API Gateway (Kong) | `http://localhost:8000` | Host / navegador | Único punto de entrada de la API. |
-| Cliente web de pruebas | `http://localhost:9000` | Host / navegador | Formularios dinámicos, inspector JWT, historial. |
 | Backends, Postgres, Kong Admin | — | Red interna Docker | No expuestos al host. |
 
 > La plataforma expone **OpenAPI 3** para los cinco servicios. El servicio `asignaciones` publica un Swagger UI que agrega las specs en una sola URL. Úsalo como punto de partida; Postman queda relegado a casos puntuales (ver [Documentación interactiva](#-documentación-interactiva)).
@@ -62,7 +60,6 @@ Plataforma distribuida de gestión de parking con cinco microservicios independi
 - **Rate limiting** diferenciado en Kong: login 10/min, registro 5/h, refresh 30/min, autenticados 100/min.
 - **CORS, `X-Request-ID` y correlación de peticiones** configurados como plugin global.
 - **Auditoría de asignaciones** con snapshot del estado anterior y nuevo en cada cambio.
-- **Cliente web standalone** (HTML/CSS/JS) que consume la API y muestra Swagger UI de cada servicio.
 - **Migraciones automáticas** con Flyway (Spring) y migraciones TypeORM (NestJS).
 - **Soft delete** en usuarios, personas, roles, zonas y asignaciones.
 - **Redes Docker aisladas**: cada Postgres y cada backend vive en su propia red *internal*.
@@ -77,7 +74,6 @@ Plataforma distribuida de gestión de parking con cinco microservicios independi
 flowchart LR
     subgraph Host["Host (Windows / WSL Ubuntu)"]
         Swagger["Swagger UI centralizado · :8000/asignaciones/swagger-ui"]
-        Browser["Cliente web · :9000"]
         Curl["curl / apps externas"]
     end
 
@@ -166,7 +162,6 @@ sequenceDiagram
 | Backend Java | Java 25, Spring Boot 4.x, Spring Data JPA, Hibernate, Flyway |
 | Backend Node | Node 22, NestJS 11, TypeORM, Passport JWT, class-validator |
 | Persistencia | PostgreSQL 18 (usuarios) y PostgreSQL 16 (zonas, vehículos, asignaciones, tickets) |
-| Cliente web | HTML + CSS + JS vanilla (sin build), servido por Node `http` |
 | API docs | springdoc-openapi (Spring) y `@nestjs/swagger` (NestJS), expuestas por Kong |
 | Observabilidad | Health checks por servicio + healthcheck de Kong |
 
@@ -178,7 +173,7 @@ sequenceDiagram
 - **Docker Engine** y **Docker Compose Plugin** dentro de Ubuntu (no se necesita Docker Desktop).
 - **OpenSSL** en Ubuntu (lo usa el bootstrap para generar el par RSA).
 - **PowerShell 7** (opcional) para invocar los scripts `.ps1` desde Windows.
-- **Navegador moderno** para usar el cliente web (`http://localhost:9000`) y Swagger UI.
+- **Navegador moderno** para usar Swagger UI.
 
 Verifica el entorno antes de empezar:
 
@@ -256,8 +251,8 @@ ADMIN_FIRST_NAME=Administrador
 ADMIN_LAST_NAME=Sistema
 ADMIN_EMAIL=admin@example.com
 
-# Orígenes CORS permitidos (separados por coma). Incluye el cliente web y los Swagger UI.
-CORS_ORIGINS=http://localhost:4200,http://localhost:5173,http://localhost:9000
+# Orígenes CORS permitidos (separados por coma). Incluye los Swagger UI.
+CORS_ORIGINS=http://localhost:4200,http://localhost:5173
 ```
 
 > ⚠️ Cambia `POSTGRES_PASSWORD`, `ADMIN_PASSWORD` e `INTERNAL_SERVICE_TOKEN` si vas a exponer la plataforma fuera de `localhost`.
@@ -294,7 +289,7 @@ Espera a que **todos los healthchecks** pasen:
 wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && docker compose ps"
 ```
 
-El estado correcto es `running (healthy)` para `usuarios`, `zonas`, `vehiculos`, `asignaciones`, `tickets`, `kong` y `web`. Si algún servicio queda en `(health: starting)` o `(unhealthy)`, revisa los logs de ese servicio.
+El estado correcto es `running (healthy)` para `usuarios`, `zonas`, `vehiculos`, `asignaciones`, `tickets` y `kong`. Si algún servicio queda en `(health: starting)` o `(unhealthy)`, revisa los logs de ese servicio.
 
 ### 4. Probar la API
 
@@ -311,16 +306,13 @@ curl http://localhost:8000/api/v1/auth/me \
   -H "Authorization: Bearer <accessToken>"
 ```
 
-### 5. Abrir Swagger UI y el cliente web
+### 5. Abrir Swagger UI
 
 | Herramienta | URL |
 |---|---|
 | **Swagger UI centralizado** (los 5 servicios) | **<http://localhost:8000/asignaciones/swagger-ui>** |
-| Cliente web de pruebas | <http://localhost:9000> |
 
 En el **Swagger UI centralizado** selecciona la spec del servicio en el desplegable superior derecho. Pulsa **Authorize** y pega el `accessToken` del paso 4 para probar las rutas protegidas.
-
-El **cliente web** ofrece formularios para todos los endpoints, inspector de JWT, historial y acceso directo a los Swagger UI de cada servicio.
 
 ### 6. Logs en vivo
 
@@ -329,33 +321,6 @@ wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && 
 ```
 
 Para seguir un servicio concreto: `docker compose logs -f <servicio>` (por ejemplo `kong`, `usuarios`, `vehiculos`).
-
----
-
-## Cliente web
-
-El directorio [`web/`](./web) contiene una aplicación HTML/CSS/JS **standalone** (sin *framework*, sin *build step*) servida por `web/serve.js`. Es un *playground* pensado para explorar la API sin escribir `curl`.
-
-| Sección | Qué hace |
-|---|---|
-| **Inicio** | Estado de la plataforma, pasos para arrancar, tabla rápida de permisos. |
-| **Autenticación** | `register`, `login`, `refresh`, `logout`, `me`. Login y registro guardan la sesión automáticamente. |
-| **JWT Inspector** | Decodifica el access token, muestra header, payload, claims clave y expiración. |
-| **Usuarios / Personas / Roles** | CRUD completo (sólo ADMIN). |
-| **Zonas / Espacios** | Lectura para CLIENTE y RECAUDADOR, escritura para ADMIN. |
-| **Vehículos** | CLIENTE opera los propios; RECAUDADOR consulta; ADMIN opera todos. |
-| **Tickets** | RECAUDADOR registra entrada/salida; CLIENTE consulta los propios; ADMIN consulta todo. |
-| **Documentación API** | Estado en vivo de los Swagger UI y enlaces directos. |
-| **Historial** | Últimas 50 peticiones con request, response, status y tiempo. |
-| **Ayuda** | Errores comunes (401/403/429) y preguntas frecuentes. |
-
-**Características de UX:**
-
-- Tema claro / oscuro con `localStorage`.
-- Renovación automática del access token cuando faltan menos de 60 s o el backend responde 401.
-- Botón "Copiar cURL" en cada endpoint para llevártelo a la terminal.
-- Resaltado de sintaxis JSON en las respuestas.
-- Toasts contextuales para 401, 403 y 429.
 
 ---
 
@@ -482,7 +447,7 @@ Si prefieres abrir la documentación de un servicio concreto, también están di
 3. Pega un `accessToken` válido (obtenido vía `POST /api/v1/auth/login`).
 4. Pulsa **Authorize** y luego **Close**. Ya puedes usar "Try it out" en cualquier endpoint protegido.
 
-> Las rutas de documentación **no requieren JWT** para abrir la UI, pero los endpoints que vayas a probar sí. Si el token expira (15 min), repite el login desde el cliente web o por `curl` y vuelve a pulsar **Authorize**.
+> Las rutas de documentación **no requieren JWT** para abrir la UI, pero los endpoints que vayas a probar sí. Si el token expira (15 min), repite el login por `curl` o Swagger y vuelve a pulsar **Authorize**.
 
 ### Postman (alternativa)
 
@@ -642,7 +607,7 @@ flowchart TB
 
 ### Decisiones clave
 
-- **CORS** se configura en Kong con los orígenes declarados en `CORS_ORIGINS` (incluye `http://localhost:9000` por defecto).
+- **CORS** se configura en Kong con los orígenes declarados en `CORS_ORIGINS`.
 - **JWT** se verifica en Kong con la clave pública del issuer y de nuevo en cada backend.
 - **Tokens**:
   - Access token: JWT RS256, vida 15 min, validado en Kong y backend.
@@ -653,7 +618,7 @@ flowchart TB
 - **Auditoría**: cada `create`, `reactivate`, `transfer` o `soft delete` deja un `assignment_audit_event` con snapshot anterior y nuevo.
 - **Comunicaciones internas**: `asignaciones` consulta a `usuarios` y `vehiculos`; `tickets` consulta a `vehiculos`, `asignaciones` y `zonas` por la red interna de Docker usando el header `X-Internal-Service-Token`. Esos endpoints no están publicados en Kong.
 - **Esquema**: Hibernate valida el esquema y Flyway ejecuta las migraciones desde bases vacías en cada arranque.
-- **Aislamiento de red**: cada Postgres y cada red de backend es `internal: true`. El único puerto publicado al host es `8000` (Kong) y `9000` (cliente web).
+- **Aislamiento de red**: cada Postgres y cada red de backend es `internal: true`. El único puerto publicado al host es `8000` (Kong).
 
 ---
 
@@ -778,7 +743,7 @@ docker compose logs kong --tail=200
 
 ```text
 Distribuidas-PC2/
-├── docker-compose.yml           Orquestación: 5 servicios, 5 Postgres, Kong, web
+├── docker-compose.yml           Orquestación: 5 servicios, 5 Postgres, Kong
 ├── .env.example                 Plantilla de variables (copiada a .env por el bootstrap)
 ├── .gitignore                   Excluye .env, .secrets/, kong.yml, node_modules, etc.
 │
@@ -793,8 +758,6 @@ Distribuidas-PC2/
 │   └── kong/
 │       ├── kong.yml.template    Plantilla con placeholders
 │       └── kong.yml             Generado por el bootstrap (ignorado por Git)
-│
-├── web/                         Cliente web standalone (HTML/CSS/JS + serve.js)
 │
 ├── scripts/
 │   ├── bootstrap.ps1 / .sh      Genera .env, par RSA y kong.yml

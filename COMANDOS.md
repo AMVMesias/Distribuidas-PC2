@@ -53,7 +53,6 @@ zonas
 vehiculos
 asignaciones
 tickets
-web
 kong
 ```
 

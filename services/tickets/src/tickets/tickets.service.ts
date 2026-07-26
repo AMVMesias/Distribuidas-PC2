@@ -9,6 +9,7 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 import { ListTicketsQueryDto } from './dto/list-tickets-query.dto';
 import { Ticket, TicketStatus } from './entities/ticket.entity';
 import { EventPublisherService, AuditRequestContext, AuditEvent } from './event-publisher.service';
+import { SseService } from '../sse/sse.service';
 
 @Injectable()
 export class TicketsService {
@@ -17,6 +18,7 @@ export class TicketsService {
     private readonly clients: InternalClients,
     private readonly config: ConfigService,
     private readonly eventPublisher: EventPublisherService,
+    private readonly sseService: SseService,
   ) {}
 
   async create(dto: CreateTicketDto, actor: AuthUser, auditContext?: AuditRequestContext) {
@@ -62,6 +64,7 @@ export class TicketsService {
     try {
       const saved = await this.tickets.save(ticket);
       await this.emitRabbitEvent('CREATE', saved, actor, auditContext);
+      this.emitSpaceEvent(saved, 'OCUPADO');
       return saved;
     } catch (error) {
       await this.releaseSpaceQuietly(space.id);
@@ -104,6 +107,7 @@ export class TicketsService {
     const saved = await this.tickets.save(ticket);
     await this.clients.setSpaceStatus(saved.idEspacio, 'DISPONIBLE');
     await this.emitRabbitEvent('UPDATE', saved, actor, auditContext);
+    this.emitSpaceEvent(saved, 'DISPONIBLE');
     return saved;
   }
 
@@ -117,6 +121,7 @@ export class TicketsService {
     const saved = await this.tickets.save(ticket);
     await this.clients.setSpaceStatus(saved.idEspacio, 'DISPONIBLE');
     await this.emitRabbitEvent('UPDATE', saved, actor, auditContext);
+    this.emitSpaceEvent(saved, 'DISPONIBLE');
     return saved;
   }
 
@@ -233,6 +238,14 @@ export class TicketsService {
     };
 
     await this.eventPublisher.publish(event);
+  }
+
+  private emitSpaceEvent(ticket: Ticket, estado: 'OCUPADO' | 'DISPONIBLE') {
+    this.sseService.emitEvent('ESPACIO_ACTUALIZADO', {
+      idEspacio: ticket.idEspacio,
+      estado,
+      idTicket: ticket.id,
+    });
   }
 
   private normalizeIp(ip?: string): string {

@@ -5,6 +5,7 @@ import { TicketsModule } from './tickets/tickets.module';
 import { Ticket } from './tickets/entities/ticket.entity';
 import { InitialTicketsSchema1730000000000 } from './migrations/1730000000000-initial-tickets-schema';
 import { HealthController } from './health.controller';
+import { SseModule } from './sse/sse.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { HealthController } from './health.controller';
       inject: [ConfigService],
     }),
     TicketsModule,
+    SseModule,
   ],
   controllers: [HealthController],
 })

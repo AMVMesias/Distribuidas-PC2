@@ -35,6 +35,10 @@ yarn-error.log*
 **/.vscode/
 .codex/
 **/.codex/
+.agents/
+**/.agents/
+.postman/
+postman/
 *.iml
 *.iws
 *.ipr

@@ -8,9 +8,10 @@ import { InternalClients } from './clients/internal-clients';
 import { EventPublisherService } from './event-publisher.service';
 import { TicketsController } from './tickets.controller';
 import { TicketsService } from './tickets.service';
+import { SseModule } from '../sse/sse.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Ticket]), PassportModule],
+  imports: [TypeOrmModule.forFeature([Ticket]), PassportModule, SseModule],
   controllers: [TicketsController],
   providers: [TicketsService, InternalClients, JwtStrategy, RolesGuard, EventPublisherService],
 })
