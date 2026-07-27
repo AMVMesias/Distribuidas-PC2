@@ -13,8 +13,11 @@ export function PortalHeader({ openMenu }: { openMenu: () => void }) {
   const router = useRouter();
 
   const exit = async () => {
+    const homeHref = `/${locale}`;
+    const loginHref = `/${locale}/login`;
+    window.history.replaceState({ ...window.history.state }, '', homeHref);
     await logout();
-    router.replace(`/${locale}/login`);
+    window.location.assign(loginHref);
   };
 
   return (

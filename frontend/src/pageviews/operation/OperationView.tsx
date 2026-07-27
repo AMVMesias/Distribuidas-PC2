@@ -9,6 +9,7 @@ import { PageHeader } from '@/shared/components/PageHeader';
 import { ErrorNotice, LoadingState } from '@/shared/components/Feedback';
 import { StatusBadge } from '@/shared/components/StatusBadge';
 import { EntryForm } from '@/features/operation/components/EntryForm';
+import { SseBadge } from '@/shared/components/SseBadge';
 
 export function OperationView() {
   const { request, hasRole } = useAuth();
@@ -17,6 +18,11 @@ export function OperationView() {
   const [message, setMessage] = useState('');
   const allowed = hasRole('RECAUDADOR', 'ADMIN', 'ROOT');
   const spaces = useMemo(() => zones.data.flatMap(zone => zone.espacios ?? []).filter(space => space.estado === 'DISPONIBLE' && space.activo), [zones.data]);
+
+  const reloadAll = () => {
+    zones.reload();
+    tickets.reload();
+  };
 
   const create = async (body: unknown) => {
     const ticket = await request<Ticket>('/api/v1/tickets', { method: 'POST', body: JSON.stringify(body) });
@@ -33,7 +39,12 @@ export function OperationView() {
   if (!allowed) return <ErrorNotice message="Tu rol no tiene acceso al módulo operativo." />;
   return (
     <>
-      <PageHeader eyebrow="Turno operativo" title="Entradas y salidas" description="Registra el ingreso por placa y procesa la salida desde la misma superficie de trabajo." />
+      <PageHeader
+        eyebrow="Turno operativo"
+        title="Entradas y salidas"
+        description="Registra el ingreso por placa y procesa la salida desde la misma superficie de trabajo."
+        actions={<SseBadge onEvent={reloadAll} />}
+      />
       {message && <p role="status" className="mb-6 flex items-center gap-2 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"><CheckCircle2 size={18} />{message}</p>}
       {(zones.error || tickets.error) && <ErrorNotice message={zones.error || tickets.error} />}
       {zones.loading || tickets.loading ? <LoadingState /> : (

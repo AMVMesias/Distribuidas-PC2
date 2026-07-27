@@ -32,6 +32,7 @@ export function LandingHeader() {
         right: elevated ? side : 0,
         borderRadius: elevated ? 16 : 0,
         boxShadow: elevated ? '0 12px 42px rgb(15 48 40 / 14%)' : '0 0 0 rgb(15 48 40 / 0%)',
+        borderWidth: elevated ? '1px' : '0 0 1px 0',
         duration: immediate ? 0 : 0.45,
         ease: 'power3.out',
         overwrite: true,
@@ -50,9 +51,9 @@ export function LandingHeader() {
   }, []);
 
   return (
-    <header ref={header} className="fixed inset-x-0 top-0 z-50 border backdrop-blur-2xl backdrop-saturate-150 will-change-[top,left,right,border-radius]" style={{ background: 'color-mix(in srgb, var(--surface) 58%, transparent)' }}>
+    <header ref={header} className="fixed inset-x-0 top-0 z-50 border border-[var(--border)] backdrop-blur-2xl backdrop-saturate-150 will-change-[top,left,right,border-radius]" style={{ background: 'color-mix(in srgb, var(--surface) 58%, transparent)' }}>
       <nav className="page-shell flex h-16 items-center justify-between" aria-label="Navegación principal">
-        <a href="#inicio" aria-label="Nexo Park, inicio"><Brand prominent /></a>
+        <a href="#inicio" aria-label="Nexo Park, inicio"><Brand /></a>
         <div className="hidden items-center gap-7 lg:flex">
           {nav.map(([href, label]) => (
             <a key={href} href={href} className="text-sm font-medium transition hover:text-[var(--brand)]">{label}</a>

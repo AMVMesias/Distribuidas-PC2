@@ -9,7 +9,7 @@ for file in .env .secrets/jwt-private.pem .secrets/jwt-public.pem; do
 done
 
 kubectl config current-context >/dev/null
-kubectl apply -f deployment/1-namespace.yaml
+kubectl apply -f k8s/1-namespace.yaml
 
 kubectl create secret generic parking-secrets \
   --namespace nexo-park \
@@ -27,7 +27,7 @@ kubectl create configmap kong-config \
   --from-file=kong.yml=infrastructure/kong/kong.yml \
   --dry-run=client -o yaml | kubectl apply -f -
 
-kubectl apply -k deployment
+kubectl apply -k k8s
 kubectl get pods,svc,ingress,pvc -n nexo-park
 
 echo "Deployment submitted. Add nexo.local to your hosts file using the ingress address."

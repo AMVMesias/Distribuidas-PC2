@@ -53,6 +53,17 @@ button, a, input, select, textarea { outline-offset: 3px; }
   .data-table { @apply w-full min-w-[680px] text-left text-sm; }
   .data-table th { @apply border-b px-4 py-3 text-xs font-semibold uppercase tracking-wider; color: var(--muted); }
   .data-table td { @apply border-b px-4 py-4; }
+  .interactive-tr {
+    @apply cursor-pointer transition-all duration-200;
+  }
+  .interactive-tr:hover {
+    background-color: color-mix(in srgb, var(--brand) 12%, var(--surface));
+    box-shadow: inset 4px 0 0 var(--brand), 0 6px 18px rgb(15 118 110 / 12%);
+  }
+  .dark .interactive-tr:hover {
+    background-color: color-mix(in srgb, var(--brand) 22%, var(--surface));
+    box-shadow: inset 4px 0 0 var(--brand-bright), 0 6px 18px rgb(0 0 0 / 45%);
+  }
 }
 
 .grid-glow {

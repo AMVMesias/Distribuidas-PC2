@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, LoaderCircle } from 'lucide-react';
 import { useAuth } from '@/features/auth/model/AuthContext';
@@ -11,10 +11,16 @@ import { useI18n } from '@/shared/i18n/I18nContext';
 
 export function RegisterView() {
   const { dictionary, locale } = useI18n();
-  const { register } = useAuth();
+  const { session, loading, register } = useAuth();
   const router = useRouter();
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!loading && session) {
+      router.replace(`/${locale}/portal`);
+    }
+  }, [loading, locale, router, session]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

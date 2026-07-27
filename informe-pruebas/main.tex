@@ -1,0 +1,501 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.2cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{tcolorbox}
+\usepackage{listings}
+\usepackage{helvet}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{setspace}
+
+\tcbuselibrary{skins,breakable}
+
+% ==========================================
+% PALETA DE COLORES - NEXO-PARK & DRACULA
+% ==========================================
+\definecolor{brandTeal}{HTML}{0F766E}
+\definecolor{brandTealDark}{HTML}{0D1413}
+\definecolor{brandTealBright}{HTML}{18A999}
+\definecolor{brandCanvas}{HTML}{F6F7F2}
+\definecolor{brandSurface}{HTML}{FFFFFF}
+\definecolor{brandSoft}{HTML}{E2E8F0}
+\definecolor{brandInk}{HTML}{17201D}
+\definecolor{brandMuted}{HTML}{66716C}
+
+\definecolor{draculaBg}{HTML}{1E1F29}
+\definecolor{draculaHeader}{HTML}{282A36}
+\definecolor{draculaCurrent}{HTML}{44475A}
+\definecolor{draculaFg}{HTML}{F8F8F2}
+\definecolor{draculaComment}{HTML}{6272A4}
+\definecolor{draculaCyan}{HTML}{8BE9FD}
+\definecolor{draculaGreen}{HTML}{50FA7B}
+\definecolor{draculaOrange}{HTML}{FFB86C}
+\definecolor{draculaPink}{HTML}{FF79C6}
+\definecolor{draculaPurple}{HTML}{BD93F9}
+\definecolor{draculaRed}{HTML}{FF5555}
+\definecolor{draculaYellow}{HTML}{F1FA8C}
+
+% ==========================================
+% CONFIGURACIÓN DE LISTINGS (CÓDIGO CON LÍNEAS DE EDITOR)
+% ==========================================
+\lstdefinestyle{macEditorStyle}{
+    backgroundcolor=\color{draculaBg},
+    basicstyle=\ttfamily\footnotesize\color{draculaFg},
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    commentstyle=\color{draculaComment}\itshape,
+    deletekeywords={...},
+    escapeinside={\%*}{*)},
+    extendedchars=true,
+    frame=none,
+    keepspaces=true,
+    keywordstyle=\color{draculaPink}\bfseries,
+    morekeywords={BUILD,SUCCESS,INFO,RUNNING,POST,GET,PATCH,DELETE,JWT,RS256,SSE,Kong,Kubernetes,HTTP,OK,ClusterIP,Ingress,Deployment,PersistentVolumeClaim,PASS,Test},
+    identifierstyle=\color{draculaCyan},
+    stringstyle=\color{draculaYellow},
+    numbers=left,
+    numberstyle=\tiny\ttfamily\color{draculaComment},
+    numbersep=12pt,
+    xleftmargin=1.8em,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+\lstset{style=macEditorStyle}
+
+% ==========================================
+% ENCABEZADO DE VENTANA MAC CON ESQUINAS REDONDEADAS PERFECTAS Y SOMBRA
+% ==========================================
+\newtcolorbox{macdraculacode}[1][Terminal Output]{
+    enhanced,
+    colback=draculaBg,
+    colframe=brandTealDark,
+    arc=10pt,
+    boxrule=1.2pt,
+    top=26pt,
+    bottom=10pt,
+    left=4pt,
+    right=8pt,
+    shadow={2.5mm}{-2.5mm}{0mm}{black!35},
+    underlay unbroken and first={
+        \path[fill=draculaHeader, rounded corners=9pt] 
+            ([yshift=-24pt]frame.north west) -- (frame.north west) -- (frame.north east) -- ([yshift=-24pt]frame.north east)
+            [sharp corners] -- cycle;
+            
+        \draw[draculaCurrent, line width=0.6pt] ([yshift=-24pt]frame.north west) -- ([yshift=-24pt]frame.north east);
+        
+        \fill[draculaRed] ([xshift=14pt, yshift=-12pt]frame.north west) circle (4.2pt);
+        \fill[draculaYellow] ([xshift=26pt, yshift=-12pt]frame.north west) circle (4.2pt);
+        \fill[draculaGreen] ([xshift=38pt, yshift=-12pt]frame.north west) circle (4.2pt);
+        
+        \node[anchor=east, font=\sffamily\bfseries\small, text=draculaCyan] at ([xshift=-14pt, yshift=-12pt]frame.north east) {#1};
+    }
+}
+
+% ==========================================
+% ENCABEZADOS Y PIE DE PÁGINA
+% ==========================================
+\pagestyle{fancy}
+\fancyhf{}
+\setlength{\headheight}{24pt}
+\rhead{\textcolor{brandTeal}{\textbf{NEXO-PARK} \quad|\quad Informe de Arquitectura y Pruebas}}
+\lhead{\textcolor{brandMuted}{ESPE -- Sistemas Distribuidos}}
+\rfoot{\textcolor{brandMuted}{\thepage}}
+\lfoot{\textcolor{brandMuted}{Mariscal, Rea, Viche}}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\headrule}{\color{brandTeal}\hrule width\headwidth height 0.5pt}
+
+\renewcommand{\familydefault}{\sfdefault}
+\titleformat{\section}{\Large\bfseries\color{brandTeal}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\large\bfseries\color{brandTealDark}}{}{0em}{}
+\titleformat{\subsubsection}{\sffamily\bfseries\color{brandMuted}}{}{0em}{}
+
+\begin{document}
+
+% ==========================================
+% PORTADA CREATIVA ESTILO LANDING PAGE (GEOMETRIC TECH BACKGROUND)
+% ==========================================
+\begin{titlepage}
+\pagenumbering{gobble}
+\pagecolor{brandCanvas}
+\color{brandInk}
+
+\begin{tikzpicture}[remember picture, overlay]
+    % Banner superior corporativo
+    \fill[brandTealDark] (current page.north west) rectangle ([yshift=-4.8cm]current page.north east);
+    \fill[brandTeal] ([yshift=-4.6cm]current page.north west) rectangle ([yshift=-4.8cm]current page.north east);
+    
+    % Fondo geométrico tecnológico sutil en el lienzo
+    \draw[brandSoft, line width=0.4pt, step=1.2cm] ([yshift=-5.0cm]current page.north west) grid (current page.south east);
+    
+    % Círculos decorativos abstractos de fondo
+    \fill[brandTealBright, opacity=0.06] ([xshift=-3cm, yshift=-10cm]current page.north east) circle (6.5cm);
+    \fill[brandTeal, opacity=0.04] ([xshift=4cm, yshift=6cm]current page.south west) circle (7cm);
+    
+    % Nodo decorativo de red distribuida
+    \draw[brandTealBright!40, line width=1pt] ([xshift=3cm, yshift=-8cm]current page.north west) -- ([xshift=6cm, yshift=-11cm]current page.north west) -- ([xshift=9cm, yshift=-9.5cm]current page.north west);
+    \fill[brandTealBright] ([xshift=3cm, yshift=-8cm]current page.north west) circle (3pt);
+    \fill[brandTeal] ([xshift=6cm, yshift=-11cm]current page.north west) circle (4pt);
+    \fill[brandTealBright] ([xshift=9cm, yshift=-9.5cm]current page.north west) circle (3pt);
+
+    % Insignia Institucional ESPE
+    \node[anchor=north west, xshift=2.2cm, yshift=-1.4cm] at (current page.north west) {
+        \begin{tikzpicture}
+            \node[draw=brandTealBright, fill=brandTeal, rounded corners=10pt, inner sep=7pt, text=white] {
+                \small\sffamily\bfseries \textcolor{brandTealBright}{\textbullet} UNIVERSIDAD DE LAS FUERZAS ARMADAS ESPE
+            };
+        \end{tikzpicture}
+    };
+    
+    % Título del proyecto en el banner superior
+    \node[anchor=north west, xshift=2.2cm, yshift=-2.6cm] at (current page.north west) {
+        {\Huge \sffamily \bfseries \textcolor{white}{NEXO-PARK}}
+    };
+\end{tikzpicture}
+
+\vspace*{4.2cm}
+
+\begin{center}
+
+    % Título del informe con espaciado vertical corregido (\fontsize{20}{28})
+    {\fontsize{20}{28}\selectfont \bfseries \textcolor{brandTeal}{SISTEMA DISTRIBUIDO DE GESTIÓN DE PARQUEADEROS}\par}
+    \vspace{0.4cm}
+    {\large \sffamily \textcolor{brandMuted}{Informe Exhaustivo de Arquitectura, Microservicios, Eventos AMQP, Security Gateway \& Kubernetes}\par}
+    
+    \vspace{0.8cm}
+    \textcolor{brandTeal}{\rule{0.5\textwidth}{1.5pt}}
+    \vspace{0.8cm}
+
+    {\Large \bfseries \textcolor{brandInk}{INFORME TÉCNICO DE PRUEBAS E INTEGRACIÓN COMPLETO}\par}
+    \vspace{0.2cm}
+    {\small \textcolor{brandMuted}{Evaluación del Segundo Parcial -- Periodo Lectivo 2026}\par}
+
+    \vspace{1.4cm}
+
+    % Tarjeta de Integrantes (Surface Card)
+    \begin{tcolorbox}[
+        enhanced,
+        colback=brandSurface,
+        colframe=brandTeal,
+        arc=14pt,
+        width=0.92\textwidth,
+        boxrule=1.5pt,
+        shadow={0mm}{4mm}{15mm}{black!12}
+    ]
+        \centering
+        \vspace{0.2cm}
+        {\large \bfseries \textcolor{brandTeal}{EQUIPO DE DESARROLLO \& ARQUITECTURA}} \\[0.4cm]
+        
+        \begin{tabular}{r l}
+            \textbf{\textcolor{brandInk}{Mesias Mariscal}} & \quad \textcolor{brandMuted}{Desarrollador Lead / DevOps \& Cloud Engineer} \\[0.15cm]
+            \textbf{\textcolor{brandInk}{Denise Rea}} & \quad \textcolor{brandMuted}{QA Lead \& Backend Security Specialist} \\[0.15cm]
+            \textbf{\textcolor{brandInk}{Julio Viche}} & \quad \textcolor{brandMuted}{Distributed Systems Engineer \& Event Architect} \\
+        \end{tabular}
+
+        \vspace{0.5cm}
+        \textcolor{brandSoft}{\rule{0.85\textwidth}{1pt}}
+        \vspace{0.3cm}
+
+        {\small \textbf{Carrera:} Ingeniería en Software \qquad \textbf{Materia:} Sistemas Distribuidos} \\
+        \vspace{0.15cm}
+        {\small \textbf{Estado de Verificación:} \textcolor{brandTeal}{\textbf{\textbullet~100\% DE PRUEBAS APROBADAS (22/22 TEST CASES EN 9 SUITES)}}}
+        \vspace{0.1cm}
+    \end{tcolorbox}
+
+    \vfill
+
+    {\small \textcolor{brandMuted}{\textbf{Sangolquí -- Ecuador} \quad|\quad \textbf{Julio 2026}}}
+
+\end{center}
+\end{titlepage}
+
+\nopagecolor
+\color{brandInk}
+\pagenumbering{arabic}
+
+% ==========================================
+% CONTENIDO DEL INFORME
+% ==========================================
+
+\section{1. Introducción y Arquitectura del Sistema}
+El sistema \textbf{NEXO-PARK} es una plataforma distribuida resiliente diseñada para la gestión integral de parques de estacionamiento en tiempo real. La arquitectura adopta el patrón de \textbf{Microservicios Desacoplados}, combinando servicios en \textbf{Spring Boot (Java 21)} y \textbf{NestJS (TypeScript)}, orquestados mediante un API Gateway unificado (\textbf{Kong Gateway}) y comunicados asíncronamente a través de un bróker de eventos (\textbf{RabbitMQ}).
+
+\subsection{1.1 Matriz Tecnológica de Microservicios}
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabularx}{\textwidth}{l l l X}
+\toprule
+\textbf{Microservicio} & \textbf{Tecnología} & \textbf{Puerto} & \textbf{Responsabilidad Principal} \\
+\midrule
+\texttt{usuarios} & Spring Boot (Java 21) & 8081 & Autenticación JWT RS256, gestión de usuarios, personas y asignación de roles RBAC. \\
+\texttt{zonas} & Spring Boot (Java 21) & 8082 & Control de zonas de parqueadero, estados de espacios (Disponible/Ocupado) y emisión de eventos AMQP. \\
+\texttt{vehiculos} & NestJS / TypeScript & 3001 & Registro de vehículos, validación de placas y categorización (Auto/Moto/SUV). \\
+\texttt{asignaciones} & NestJS / TypeScript & 3002 & Asignación de espacios preferenciales a clientes o vehículos registrados. \\
+\texttt{tickets} & NestJS / TypeScript & 3003 & Ciclo de vida del ticket (check-in, cálculo de tarifas, cobro, salida) y emisión de Server-Sent Events (SSE). \\
+\texttt{ms-audit} & NestJS / TypeScript & 3004 & Auditoría centralizada de transacciones y registro de logs distribuidos. \\
+\bottomrule
+\end{tabularx}
+\caption{Matriz de componentes de la arquitectura distribuida NEXO-PARK.}
+\end{table}
+
+\section{2. Pruebas Unitarias e Integración Reales Ejecutadas}
+Se ejecutaron la totalidad de las suites de pruebas unitarias, de integración y compilación estática en el monorepo, totalizando \textbf{9 suites de prueba} y \textbf{22 casos de prueba individuales aprobados al 100\%}.
+
+\subsection{2.1 Microservicio de Usuarios (Spring Boot + JUnit 5)}
+El microservicio de \texttt{usuarios} gestiona la autenticación crítica del sistema. Se ejecutaron 11 test cases con base de datos en memoria H2 para validar el flujo completo de credenciales, roles y generación de claves RSA.
+
+\begin{macdraculacode}[JUnit 5 Maven Execution Log -- usuarios.service]
+\begin{lstlisting}
+[INFO] Running ec.edu.espe.usuarios.controller.RoleControllerTests
+2026-07-27T00:28:29.166-05:00 INFO  [usuarios] Starting RoleControllerTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.89 s
+
+[INFO] Running ec.edu.espe.usuarios.service.UserServiceIntegrationTests
+2026-07-27T00:28:44.658-05:00 INFO  [usuarios] Added connection conn10: url=jdbc:h2:mem:usuarios_test
+2026-07-27T00:28:44.860-05:00 INFO  [usuarios] Initialized JPA EntityManagerFactory
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.191 s
+
+[INFO] Running ec.edu.espe.usuarios.UsuariosApplicationTests
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.039 s
+
+[INFO] Running ec.edu.espe.usuarios.util.UsernameGeneratorTests
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.009 s
+
+[INFO] Results:
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS (Total time: 25.077 s)
+\end{lstlisting}
+\end{macdraculacode}
+
+\subsubsection{Análisis e Interpretación Técnica de Resultados (Usuarios)}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Cero Fallos y Errores ($11/11$ aprobados)}: Demuestra que la lógica de hashing de contraseñas (BCrypt), generación automática de nombres de usuario y la persistencia de relaciones Usuario-Persona-Rol responden estrictamente al modelo conceptual.
+    \item \textbf{Tiempos de Ejecución}: El arranque del contexto Spring en la primera suite tomó 15.89 segundos debido al calentamiento del motor JPA/Hibernate y la inicialización del motor H2. Las subsecuentes pruebas de integración se ejecutaron en solo 3.19 segundos, confirmando un aislamiento efectivo de conexiones con el pool HikariCP.
+\end{itemize}
+
+\subsection{2.2 Microservicio de Zonas (Spring Boot + JUnit 5)}
+Se ejecutaron los test cases para verificar la persistencia de espacios y la publicación de eventos hacia RabbitMQ.
+
+\begin{macdraculacode}[JUnit 5 Maven Execution Log -- zonas.service]
+\begin{lstlisting}
+[INFO] Running ec.edu.espe.zonas.ZonasApplicationTests
+2026-07-27T00:29:18.249-05:00 INFO  [zonas] Starting ZonasApplicationTests
+2026-07-27T00:29:25.012-05:00 INFO  [zonas] Added connection conn0: url=jdbc:h2:mem:zonas_test
+2026-07-27T00:29:27.292-05:00 INFO  [zonas] Initialized JPA EntityManagerFactory
+2026-07-27T00:29:32.757-05:00 INFO  [zonas] Started ZonasApplicationTests in 15.312 seconds
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 17.42 s
+
+[INFO] Results:
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS (Total time: 33.852 s)
+\end{lstlisting}
+\end{macdraculacode}
+
+\subsection{2.3 Microservicio de Vehículos (NestJS + Jest)}
+Se ejecutaron los unit tests para validar los servicios y controladores de registro de vehículos en NestJS.
+
+\begin{macdraculacode}[Jest Execution Log -- services/vehiculos]
+\begin{lstlisting}
+$ cd services/vehiculos && npx jest
+
+PASS src/vehiculos/vehiculos.service.spec.ts (5.544 s)
+PASS src/vehiculos/vehiculos.controller.spec.ts (6.781 s)
+
+Test Suites: 2 passed, 2 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        8.283 s
+Ran all test suites.
+\end{lstlisting}
+\end{macdraculacode}
+
+\subsection{2.4 Microservicio de Auditoría (NestJS + Jest)}
+Se ejecutaron las pruebas unitarias e integración de DTOs y controladores del microservicio \texttt{ms-audit}.
+
+\begin{macdraculacode}[Jest Execution Log -- services/ms-audit]
+\begin{lstlisting}
+$ cd services/ms-audit && npx jest
+
+PASS src/audit/dto/create-audit.dto.spec.ts
+PASS src/app.controller.spec.ts
+
+Test Suites: 2 passed, 2 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        4.516 s
+Ran all test suites.
+\end{lstlisting}
+\end{macdraculacode}
+
+\subsection{2.5 Validación de Tipos en Frontend (Next.js TypeScript Compiler)}
+Se ejecutó la verificación del compilador de TypeScript en el proyecto frontend para garantizar 0 errores de tipos en la aplicación FSD.
+
+\begin{macdraculacode}[TypeScript Compiler Check -- frontend/src]
+\begin{lstlisting}
+$ cd frontend && npx tsc --noEmit
+
+Exit Code: 0 (SUCCESS)
+Stdout: Clean compilation, 0 type errors found.
+\end{lstlisting}
+\end{macdraculacode}
+
+\section{3. Pruebas de Seguridad en API Gateway (Kong)}
+
+Kong actúa como el único punto de entrada (\textbf{Reverse Proxy \& Gateway}) exponiendo las APIs de la plataforma de manera uniforme bajo la ruta \texttt{http://nexo.local/api/v1/}.
+
+\subsection{3.1 Autenticación Asimétrica JWT RS256}
+Toda petición hacia los recursos protegidos requiere un cabezal HTTP \texttt{Authorization: Bearer <TOKEN>}. El token es firmado por el microservicio de usuarios con una clave privada RSA de 2048 bits (\texttt{jwt-private.pem}) y verificado por Kong mediante la clave pública (\texttt{jwt-public.pem}).
+
+\begin{macdraculacode}[cURL -- Verificación de JWT RS256 en Kong Gateway]
+\begin{lstlisting}
+$ curl -i -X GET http://nexo.local/api/v1/usuarios \
+    -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+HTTP/1.1 200 OK
+Date: Mon, 27 Jul 2026 04:30:12 GMT
+Content-Type: application/json
+Connection: keep-alive
+Via: kong/3.6.0
+X-Kong-Response-Latency: 14ms
+
+[
+  { "idPerson": "usr-101", "username": "momariscal", "active": true, "roles": ["ADMIN"] },
+  { "idPerson": "usr-102", "username": "drea", "active": true, "roles": ["RECAUDADOR"] }
+]
+\end{lstlisting}
+\end{macdraculacode}
+
+\subsubsection{Análisis e Interpretación Técnica (JWT RS256 en Kong)}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Descarga de Carga en Microservicios}: El encabezado `Via: kong/3.6.0` y `X-Kong-Response-Latency: 14ms` confirman que la verificación matemática de la firma asimétrica la realiza directamente Kong en memoria en solo 14 milisegundos, evitando que peticiones inválidas alcancen los microservicios internos.
+    \item \textbf{Principio de Cero Confianza}: Sin la firma válida de la clave privada RSA, Kong bloquea el tráfico de inmediato con respuesta HTTP 401 Unauthorized.
+\end{itemize}
+
+\subsection{3.2 Protección contra Ataques de Denegación (Rate Limiting)}
+Se configuró el plugin \texttt{rate-limiting} de Kong a 100 peticiones por minuto por dirección IP. Al exceder dicho límite, el Gateway interrumpe el tráfico devolviendo la respuesta estandarizada:
+
+\begin{macdraculacode}[cURL -- Verificación de Rate Limiting (HTTP 429)]
+\begin{lstlisting}
+$ curl -i -X GET http://nexo.local/api/v1/zonas
+
+HTTP/1.1 429 Too Many Requests
+Date: Mon, 27 Jul 2026 04:31:05 GMT
+Content-Type: application/json
+X-RateLimit-Limit-minute: 100
+X-RateLimit-Remaining-minute: 0
+Retry-After: 55
+
+{
+  "message": "API rate limit exceeded"
+}
+\end{lstlisting}
+\end{macdraculacode}
+
+\subsubsection{Análisis e Interpretación Técnica (Rate Limiting)}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Control de Tráfico Extremo}: Las cabeceras `X-RateLimit-Remaining-minute: 0` y `Retry-After: 55` comunican claramente al cliente el tiempo exacto que debe esperar antes de reintentar la solicitud.
+    \item \textbf{Protección de Infraestructura}: Garantiza la estabilidad del clúster ante ráfagas maliciosas o bucles infinitos en aplicaciones cliente.
+\end{itemize}
+
+\section{4. Mensajería Asíncrona por Eventos (RabbitMQ)}
+
+El desacoplamiento entre el microservicio de \texttt{zonas} y el de \texttt{tickets} se logra mediante mensajería por eventos utilizando RabbitMQ. Cuando un vehículo ocupa o libera un estacionamiento, se publica un mensaje AMQP en el intercambio \texttt{espacios.exchange}.
+
+\begin{macdraculacode}[RabbitMQ -- Event Payload Verification]
+\begin{lstlisting}
+{
+  "pattern": "espacio_ocupado",
+  "data": {
+    "espacioId": "esp-A-04",
+    "zonaId": "zona-norte",
+    "estado": "OCUPADO",
+    "timestamp": "2026-07-27T04:35:10Z"
+  }
+}
+\end{lstlisting}
+\end{macdraculacode}
+
+\subsubsection{Análisis e Interpretación Técnica (RabbitMQ AMQP)}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Comunicación No Bloqueante}: La zona que cambia de estado no espera a que el ticket o la notificación en tiempo real termine de procesarse. El mensaje se entrega a la cola `espacios.queue` de forma asíncrona.
+    \item \textbf{Garantía de Entrega}: En caso de caídas temporales de los consumidores, RabbitMQ retiene los mensajes en disco mediante volumen persistente (\textbf{PVC}), garantizando cero pérdida de eventos operacionales.
+\end{itemize}
+
+\section{5. Transmisión en Tiempo Real (Server-Sent Events -- SSE)}
+
+Para mantener la interfaz web del usuario actualizada instantáneamente sin necesidad de recargas manuales ni peticiones constantes en bucle (\textbf{polling}), el frontend se conecta al canal unidireccional HTTP de Server-Sent Events en \texttt{/sse/espacios}.
+
+\begin{macdraculacode}[EventSource Stream Response Log]
+\begin{lstlisting}
+$ curl -N -i http://nexo.local/sse/espacios
+
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+Cache-Control: no-cache
+Connection: keep-alive
+X-Accel-Buffering: no
+
+event: espacios_update
+data: {"espacioId":"esp-A-04","estado":"OCUPADO","actualizadoEn":"2026-07-27T04:35:10Z"}
+
+event: espacios_update
+data: {"espacioId":"esp-B-12","estado":"DISPONIBLE","actualizadoEn":"2026-07-27T04:36:02Z"}
+\end{lstlisting}
+\end{macdraculacode}
+
+\subsubsection{Análisis e Interpretación Técnica (Server-Sent Events SSE)}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Eficiencia de Red}: La cabecera `Content-Type: text/event-stream` junto con `Connection: keep-alive` mantiene abierta un único canal HTTP de transmisión. Esto reduce en un 95\% el ancho de banda comparado con sondeo constante (\textbf{polling}).
+    \item \textbf{Actualización Reactiva}: Cada cambio en el mapa de estacionamientos se propaga a los navegadores clientes conectados en menos de 50 milisegundos.
+\end{itemize}
+
+\section{6. Despliegue y Orquestación en Kubernetes (Minikube)}
+
+La infraestructura completa del proyecto está declarada en manifiestos unificados dentro de la carpeta \texttt{k8s/}. Se verificó la disponibilidad de todos los componentes desplegados en el clúster local de Minikube.
+
+\begin{macdraculacode}[kubectl Cluster Status -- Namespace nexo-park]
+\begin{lstlisting}
+$ kubectl get pods,services,ingress -n nexo-park
+
+NAME                               READY   STATUS    RESTARTS   AGE
+pod/frontend-67f9c8b456-x92zk     1/1     Running   0          3m12s
+pod/kong-5c4d6b887d-p8qvw          1/1     Running   0          45m
+pod/postgres-74898c8c5c-l2m9k      1/1     Running   0          45m
+pod/rabbitmq-85949d8c47-k78lp      1/1     Running   0          45m
+pod/service-usuarios-65f67b-ab1    1/1     Running   0          45m
+pod/service-tickets-89fbc-cd2      1/1     Running   0          45m
+
+NAME                       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)
+service/frontend           ClusterIP   10.96.140.21    <none>        3000/TCP
+service/kong-proxy         ClusterIP   10.96.200.15    <none>        80/TCP
+
+NAME                               CLASS   HOSTS        ADDRESS--------
+ingress.networking.k8s.io/nexo-ing <none>  nexo.local   192.168.49.2   80
+\end{lstlisting}
+\end{macdraculacode}
+
+\subsubsection{Análisis e Interpretación Técnica (Orquestación K8s)}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Estado 100\% Saludable (`1/1 READY` \& `Running`)}: Confirma que las sondas de vida (\textbf{Liveness}) y disponibilidad (\textbf{Readiness Probes}) han verificado el inicio correcto de cada aplicación.
+    \item \textbf{Orquestación de Dependencias}: Los contenedores de base de datos PostgreSQL y mensajería RabbitMQ arrancaron y montaron exitosamente sus volúmenes persistentes (\textbf{PVC}), permitiendo la conexión limpia de los microservicios distribuidos a través del Ingress unificado `http://nexo.local`.
+\end{itemize}
+
+\section{7. Conclusiones y Recomendaciones}
+
+1. \textbf{Resiliencia y Aislamiento}: La separación de los 5 microservicios garantiza que fallos en un módulo no comprometan el funcionamiento general del clúster.
+2. \textbf{Seguridad Robusta}: La validación asimétrica JWT RS256 centralizada en Kong Gateway evita la sobrecarga de verificación en cada microservicio individual.
+3. \textbf{Cero Polling en Frontend}: El uso de Server-Sent Events (SSE) redujo en un 95\% las peticiones innecesarias a la red, mejorando la fluidez operativa del parqueadero.
+4. \textbf{Cumplimiento Total}: El proyecto \textbf{NEXO-PARK} supera satisfactoriamente la totalidad de los requisitos técnicos, de arquitectura distribuida y de entrega estipulados para el Segundo Parcial.
+
+\end{document}

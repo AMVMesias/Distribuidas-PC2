@@ -22,7 +22,7 @@ export function useLandingMotion(scope: RefObject<HTMLElement | null>) {
         scrollTrigger: { trigger: '[data-hero]', start: 'top top', end: 'bottom top', scrub: 0.7 },
       });
       gsap.to('[data-marquee]', {
-        xPercent: -50, duration: 18, repeat: -1, ease: 'none',
+        xPercent: -50, duration: 32, repeat: -1, ease: 'none',
       });
       gsap.to('[data-places-track]', {
         xPercent: -50, duration: 34, repeat: -1, ease: 'none',

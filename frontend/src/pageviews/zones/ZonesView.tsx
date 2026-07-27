@@ -11,6 +11,7 @@ import { Modal } from '@/shared/components/Modal';
 import { ZoneForm } from '@/features/zones/components/ZoneForm';
 import { SpaceForm } from '@/features/zones/components/SpaceForm';
 import { ZoneCard } from '@/pageviews/zones/components/ZoneCard';
+import { SseBadge } from '@/shared/components/SseBadge';
 
 export function ZonesView() {
   const { request, hasRole } = useAuth();
@@ -30,7 +31,18 @@ export function ZonesView() {
 
   return (
     <>
-      <PageHeader eyebrow="Infraestructura" title="Zonas y espacios" description="Consulta la distribución del parqueadero. Las acciones de configuración aparecen únicamente para administración." actions={<><button onClick={reload} className="secondary-button min-h-10 px-4"><RefreshCw size={16} />Actualizar</button>{canEdit && <button onClick={() => setZoneModal(true)} className="primary-button min-h-10 px-4"><Plus size={16} />Nueva zona</button>}</>} />
+      <PageHeader
+        eyebrow="Infraestructura"
+        title="Zonas y espacios"
+        description="Consulta la distribución del parqueadero. Las acciones de configuración aparecen únicamente para administración."
+        actions={
+          <>
+            <SseBadge onEvent={reload} />
+            <button onClick={reload} className="secondary-button min-h-10 px-4"><RefreshCw size={16} />Actualizar</button>
+            {canEdit && <button onClick={() => setZoneModal(true)} className="primary-button min-h-10 px-4"><Plus size={16} />Nueva zona</button>}
+          </>
+        }
+      />
       {error && <ErrorNotice message={error} />}
       {loading ? <LoadingState /> : <div className="grid gap-5">{data.map(zone => <ZoneCard key={zone.id} zone={zone} canEdit={canEdit} addSpace={() => setSpaceZone(zone)} changeStatus={changeStatus} />)}{!data.length && <EmptyState title="No hay zonas registradas" copy="Cuando se cree una zona aparecerá en este espacio." />}</div>}
       <Modal open={zoneModal} close={() => setZoneModal(false)} title="Crear nueva zona"><ZoneForm save={body => create('/api/v1/zonas', body, () => setZoneModal(false))} /></Modal>

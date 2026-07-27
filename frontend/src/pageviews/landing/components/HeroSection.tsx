@@ -5,11 +5,14 @@ import { NexoGlyph } from '@/shared/components/NexoGlyph';
 import { Dictionary } from '@/shared/i18n/types';
 import heroImage from '@/shared/assets/smart-parking-hero.png';
 
+const MARQUEE_ITEMS = ['Registra', 'Ingresa', 'Consulta', 'Gestiona'];
+const TRACK_ITEMS = Array(5).fill(MARQUEE_ITEMS).flat();
+
 export function HeroSection({ copy }: { copy: Dictionary }) {
   return (
-    <section id="inicio" data-hero className="relative min-h-[100svh] w-full overflow-hidden pt-20">
-      <div className="grid lg:min-h-[calc(100svh-8.5rem)] lg:grid-cols-[46%_54%]">
-        <article data-hero-copy className="relative z-10 flex flex-col justify-center px-5 py-16 sm:px-8 lg:px-[5vw] lg:py-20">
+    <section id="inicio" data-hero className="relative min-h-[100svh] w-full overflow-hidden">
+      <div className="grid lg:min-h-[calc(100svh-3.5rem)] lg:grid-cols-[46%_54%]">
+        <article data-hero-copy className="relative z-10 flex flex-col justify-center px-5 pt-28 pb-16 sm:px-8 lg:px-[5vw] lg:pt-32 lg:pb-20">
           <p className="eyebrow mb-6 inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2">
             <span className="size-2 rounded-full bg-[var(--brand)]" />{copy.hero.eyebrow}
           </p>
@@ -45,10 +48,18 @@ export function HeroSection({ copy }: { copy: Dictionary }) {
         </div>
       </div>
       <div className="flex h-14 items-center overflow-hidden border-y bg-[var(--surface)]" aria-hidden="true">
-        <p data-marquee className="flex min-w-max items-center gap-10 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">
-          Registra <span className="text-[var(--brand)]">●</span> Ingresa <span className="text-[var(--brand)]">●</span> Consulta <span className="text-[var(--brand)]">●</span> Gestiona <span className="text-[var(--brand)]">●</span>
-          Registra <span className="text-[var(--brand)]">●</span> Ingresa <span className="text-[var(--brand)]">●</span> Consulta <span className="text-[var(--brand)]">●</span> Gestiona <span className="text-[var(--brand)]">●</span>
-        </p>
+        <div data-marquee className="flex min-w-max items-center">
+          {[0, 1].map(trackIdx => (
+            <div key={trackIdx} className="flex shrink-0 items-center gap-8 pr-8 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">
+              {TRACK_ITEMS.map((item, itemIdx) => (
+                <span key={itemIdx} className="flex items-center gap-8">
+                  <span>{item}</span>
+                  <span className="text-[var(--brand)]">●</span>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

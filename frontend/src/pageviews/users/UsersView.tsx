@@ -44,7 +44,55 @@ export function UsersView() {
       <PageHeader eyebrow="Administración" title="Usuarios" description="Crea cuentas internas, revisa sus datos y administra los roles asignados." actions={<button className="primary-button min-h-10 px-4" onClick={() => setCreating(true)}><Plus size={16} />Nuevo usuario</button>} />
       <label className="mb-6 flex max-w-lg items-center gap-3 rounded-xl border px-4" style={{ background: 'var(--surface)' }}><Search size={18} /><input className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none" value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar usuario, nombre o documento" /></label>
       {(users.error || roles.error) && <ErrorNotice message={users.error || roles.error} />}
-      {users.loading || roles.loading ? <LoadingState /> : filtered.length ? <div className="surface-card overflow-x-auto"><table className="data-table"><thead><tr><th>Usuario</th><th>Persona</th><th>Roles</th><th>Estado</th><th /></tr></thead><tbody>{filtered.map(user => <tr key={user.idPerson}><td><button className="font-semibold text-[var(--brand)]" onClick={() => setSelected(user)}>{user.username}</button></td><td><p>{user.persona.firstName} {user.persona.lastName}</p><p className="text-xs" style={{ color: 'var(--muted)' }}>{user.persona.email}</p></td><td><div className="flex flex-wrap gap-1">{user.roles.filter(role => role.active).map(role => <StatusBadge key={role.id} status={role.name} />)}</div></td><td><StatusBadge status={user.active ? 'ACTIVE' : 'INACTIVE'} /></td><td><button onClick={() => deactivate(user)} className="grid size-9 place-items-center rounded-lg border text-red-500" aria-label="Desactivar usuario"><Trash2 size={16} /></button></td></tr>)}</tbody></table></div> : <EmptyState title="No hay usuarios" copy="Prueba otra búsqueda o crea una cuenta." />}
+      {users.loading || roles.loading ? <LoadingState /> : filtered.length ? (
+        <div className="surface-card overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr><th>Usuario</th><th>Persona</th><th>Roles</th><th>Estado</th><th /></tr>
+            </thead>
+            <tbody>
+              {filtered.map(user => (
+                <tr
+                  key={user.idPerson}
+                  onClick={() => setSelected(user)}
+                  className="interactive-tr"
+                  title="Haz clic para ver el detalle y gestionar los roles del usuario"
+                >
+                  <td>
+                    <span className="font-semibold text-[var(--brand)] group-hover:underline">
+                      {user.username}
+                    </span>
+                  </td>
+                  <td>
+                    <p className="font-medium">{user.persona.firstName} {user.persona.lastName}</p>
+                    <p className="text-xs" style={{ color: 'var(--muted)' }}>{user.persona.email}</p>
+                  </td>
+                  <td>
+                    <div className="flex flex-wrap gap-1">
+                      {user.roles.filter(role => role.active).map(role => (
+                        <StatusBadge key={role.id} status={role.name} />
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <StatusBadge status={user.active ? 'ACTIVE' : 'INACTIVE'} />
+                  </td>
+                  <td onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => deactivate(user)}
+                      className="grid size-9 place-items-center rounded-lg border text-red-500 hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-950/30 transition-colors"
+                      aria-label="Desactivar usuario"
+                      title="Desactivar usuario"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : <EmptyState title="No hay usuarios" copy="Prueba otra búsqueda o crea una cuenta." />}
       <Modal open={creating} close={() => setCreating(false)} title="Crear usuario interno"><UserForm roles={roles.data} save={create} /></Modal>
       <Modal open={Boolean(selected)} close={() => setSelected(null)} title={selected ? `${selected.persona.firstName} ${selected.persona.lastName}` : 'Usuario'}>{selected && <UserDetail user={selected} roles={roles.data} assign={id => roleAction(selected, id, 'POST')} remove={id => roleAction(selected, id, 'DELETE')} />}</Modal>
     </>
