@@ -4,8 +4,8 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-if [[ ! -f .env || ! -f infrastructure/kong/kong.yml ]]; then
-  echo "Falta ejecutar scripts/bootstrap.sh antes de cargar datos." >&2
+if [[ ! -f .env ]]; then
+  echo "No se encontro el archivo .env del proyecto." >&2
   exit 1
 fi
 
@@ -14,21 +14,16 @@ set -a
 source .env
 set +a
 
-BASE_URL="${BASE_URL:-http://localhost:8000}"
+BASE_URL="${BASE_URL:-http://nexo.local}"
 DEMO_PASSWORD="${DEMO_PASSWORD:-Demo12345!}"
 RECAUDADOR_PASSWORD="${RECAUDADOR_PASSWORD:-Recaudador12345!}"
-RESET=false
 
 if [[ "${1:-}" == "--reset" ]]; then
-  RESET=true
-  echo "Eliminando unicamente los volumenes del monorepo..."
-  docker compose down -v
-  docker compose up --build -d
-else
-  docker compose up -d
+  echo "La carga demo no borra datos. Para reiniciar Kubernetes usa scripts/k8s-reset-dev.sh --yes y vuelve a desplegar." >&2
+  exit 2
 fi
 
-echo "Esperando a que el gateway y los servicios esten disponibles..."
+echo "Esperando a que el gateway de Kubernetes y los servicios esten disponibles en $BASE_URL..."
 for attempt in $(seq 1 120); do
   if curl -fsS "$BASE_URL/usuarios/v3/api-docs" >/dev/null 2>&1 \
     && curl -fsS "$BASE_URL/zonas/v3/api-docs" >/dev/null 2>&1 \
@@ -39,7 +34,7 @@ for attempt in $(seq 1 120); do
   fi
   if [[ "$attempt" == "120" ]]; then
     echo "Los servicios no estuvieron listos a tiempo." >&2
-    docker compose ps
+    kubectl get pods -n nexo-park >&2 || true
     exit 1
   fi
   sleep 2
@@ -113,13 +108,10 @@ PY
 
 admin_token="$(login "$ADMIN_USERNAME" "$ADMIN_PASSWORD")"
 
-if [[ "$RESET" == "false" ]]; then
-  existing_tickets_count="$(request_json GET /api/v1/tickets "" "$admin_token" | json_get "len(data)")"
-  if [[ "$existing_tickets_count" -gt 0 ]]; then
-    echo "Ya existen tickets en la base demo ($existing_tickets_count). No se duplicaron datos."
-    echo "Si quieres recargar todo desde cero, ejecuta: bash scripts/seed-demo.sh --reset"
-    exit 0
-  fi
+existing_tickets_count="$(request_json GET /api/v1/tickets "" "$admin_token" | json_get "len(data)")"
+if [[ "$existing_tickets_count" -gt 0 ]]; then
+  echo "Ya existen tickets en la base demo ($existing_tickets_count). No se duplicaron datos."
+  exit 0
 fi
 
 roles_response="$(request_json GET /api/v1/roles "" "$admin_token")"

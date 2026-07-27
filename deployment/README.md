@@ -35,6 +35,17 @@ Luego agrega el dominio al archivo `hosts`:
 127.0.0.1 nexo.local
 ```
 
+Con todos los pods listos y el tunel activo, carga datos funcionales de
+demostracion sin borrar los usuarios existentes:
+
+```bash
+bash scripts/seed-demo.sh
+```
+
+La carga crea clientes, un recaudador, zonas, espacios, vehiculos,
+asignaciones y tickets con distintos estados. Si ya existen tickets demo,
+el script termina sin duplicarlos.
+
 Consulta el estado con:
 
 ```bash
