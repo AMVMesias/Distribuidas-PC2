@@ -229,12 +229,6 @@ sequenceDiagram
 
 ## Aplicación Frontend (Nexo Park)
 
-<div align="center">
-  <img src="docs/screenshots/landing.png" alt="Nexo Park - Landing pública (modo oscuro)" width="900" style="border-radius: 8px;" />
-  <br/><em>Landing pública en modo oscuro con hero animado, selector de idioma y tema.</em>
-</div>
-<br/>
-
 La UI de Nexo Park es una **SPA Next.js 16** con App Router, React 19, TailwindCSS v4 y animaciones GSAP. Está organizada como **Feature-Sliced Design (FSD)**:
 
 ```text
