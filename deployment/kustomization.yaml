@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - 1-namespace.yaml
+  - 2-config.yaml
+  - 3-postgres.yaml
+  - 4-rabbitmq.yaml
+  - 5-usuarios.yaml
+  - 6-zonas.yaml
+  - 7-vehiculos.yaml
+  - 8-asignaciones.yaml
+  - 9-tickets.yaml
+  - 10-audit.yaml
+  - 11-kong.yaml
+  - 12-frontend.yaml
+  - 13-ingress.yaml

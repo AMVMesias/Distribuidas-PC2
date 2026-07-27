@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: parking-config
+  namespace: nexo-park
+data:
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  USUARIOS_DB: usuarios
+  ZONAS_DB: zonas
+  VEHICULOS_DB: gestion_vehiculos
+  ASIGNACIONES_DB: asignaciones
+  TICKETS_DB: tickets
+  AUDIT_DB: auditoria
+  JWT_ISSUER: gateway-distribuidas
+  JWT_AUDIENCE: parking-api
+  JWT_ACCESS_MINUTES: "15"
+  JWT_REFRESH_DAYS: "7"
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_EXCHANGE: audit_exchange
+  RABBITMQ_ROUTING_KEY: audit_event
+  RABBITMQ_QUEUE: audit_queue
+  RABBITMQ_DEAD_LETTER_EXCHANGE: audit_dead_exchange
+  USUARIOS_INTERNAL_URL: http://usuarios:8080
+  VEHICULOS_INTERNAL_URL: http://vehiculos:3000
+  ASIGNACIONES_INTERNAL_URL: http://asignaciones:3000
+  ZONAS_INTERNAL_URL: http://zonas:8080
+  TICKET_RATE_MOTO: "0.50"
+  TICKET_RATE_AUTO: "1.00"
+  TICKET_RATE_CAMIONETA: "1.25"
+  TICKET_RATE_BUS: "2.00"
+  TICKET_SPACE_FACTOR_MOTO: "1.00"
+  TICKET_SPACE_FACTOR_AUTO: "1.00"
+  TICKET_SPACE_FACTOR_BUS: "1.50"

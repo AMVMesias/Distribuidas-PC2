@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vehiculos
+  namespace: nexo-park
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: vehiculos }
+  template:
+    metadata:
+      labels: { app: vehiculos }
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: vehiculos
+          image: nexo-vehiculos:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 3000 }
+          envFrom:
+            - configMapRef: { name: parking-config }
+            - secretRef: { name: parking-secrets }
+          env:
+            - { name: DB_HOST, value: postgres }
+            - { name: DB_PORT, value: "5432" }
+            - { name: DB_NOMBRE, value: gestion_vehiculos }
+            - name: DB_USUARIO
+              valueFrom: { secretKeyRef: { name: parking-secrets, key: POSTGRES_USER } }
+            - name: DB_CONTRASENA
+              valueFrom: { secretKeyRef: { name: parking-secrets, key: POSTGRES_PASSWORD } }
+            - { name: JWT_PUBLIC_KEY_PATH, value: /run/secrets/jwt-public.pem }
+          volumeMounts:
+            - { name: jwt, mountPath: /run/secrets, readOnly: true }
+          startupProbe: &nodeStartup
+            httpGet: { path: /health, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe: &nodeReady
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+          livenessProbe: &nodeLive
+            httpGet: { path: /health, port: http }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 75m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 384Mi }
+      volumes:
+        - name: jwt
+          secret:
+            secretName: jwt-keys
+            items:
+              - { key: jwt-public.pem, path: jwt-public.pem }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vehiculos
+  namespace: nexo-park
+spec:
+  selector: { app: vehiculos }
+  ports:
+    - { name: http, port: 3000, targetPort: http }

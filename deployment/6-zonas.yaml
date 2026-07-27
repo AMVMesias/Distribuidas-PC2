@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zonas
+  namespace: nexo-park
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: zonas }
+  template:
+    metadata:
+      labels: { app: zonas }
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: zonas
+          image: nexo-zonas:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 8080 }
+          envFrom:
+            - configMapRef: { name: parking-config }
+            - secretRef: { name: parking-secrets }
+          env:
+            - { name: SPRING_DATASOURCE_URL, value: "jdbc:postgresql://postgres:5432/zonas" }
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom: { secretKeyRef: { name: parking-secrets, key: POSTGRES_USER } }
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom: { secretKeyRef: { name: parking-secrets, key: POSTGRES_PASSWORD } }
+            - { name: JWT_PUBLIC_KEY, value: "file:/run/secrets/jwt-public.pem" }
+          volumeMounts:
+            - { name: jwt, mountPath: /run/secrets, readOnly: true }
+          startupProbe:
+            httpGet: { path: /actuator/health, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health, port: http }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 150m, memory: 256Mi }
+            limits: { cpu: 750m, memory: 768Mi }
+      volumes:
+        - name: jwt
+          secret:
+            secretName: jwt-keys
+            items:
+              - { key: jwt-public.pem, path: jwt-public.pem }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zonas
+  namespace: nexo-park
+spec:
+  selector: { app: zonas }
+  ports:
+    - { name: http, port: 8080, targetPort: http }

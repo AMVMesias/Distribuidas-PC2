@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asignaciones
+  namespace: nexo-park
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: asignaciones }
+  template:
+    metadata:
+      labels: { app: asignaciones }
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: asignaciones
+          image: nexo-asignaciones:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 3000 }
+          envFrom:
+            - configMapRef: { name: parking-config }
+            - secretRef: { name: parking-secrets }
+          env:
+            - { name: DB_HOST, value: postgres }
+            - { name: DB_PORT, value: "5432" }
+            - { name: DB_NOMBRE, value: asignaciones }
+            - name: DB_USUARIO
+              valueFrom: { secretKeyRef: { name: parking-secrets, key: POSTGRES_USER } }
+            - name: DB_CONTRASENA
+              valueFrom: { secretKeyRef: { name: parking-secrets, key: POSTGRES_PASSWORD } }
+            - { name: JWT_PUBLIC_KEY_PATH, value: /run/secrets/jwt-public.pem }
+          volumeMounts:
+            - { name: jwt, mountPath: /run/secrets, readOnly: true }
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 75m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 384Mi }
+      volumes:
+        - name: jwt
+          secret:
+            secretName: jwt-keys
+            items:
+              - { key: jwt-public.pem, path: jwt-public.pem }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: asignaciones
+  namespace: nexo-park
+spec:
+  selector: { app: asignaciones }
+  ports:
+    - { name: http, port: 3000, targetPort: http }

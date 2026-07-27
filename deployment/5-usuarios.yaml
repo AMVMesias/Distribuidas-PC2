@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: usuarios
+  namespace: nexo-park
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: usuarios }
+  template:
+    metadata:
+      labels: { app: usuarios }
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: usuarios
+          image: nexo-usuarios:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 8080 }
+          envFrom:
+            - configMapRef: { name: parking-config }
+            - secretRef: { name: parking-secrets }
+          env:
+            - name: DB_URL
+              value: jdbc:postgresql://postgres:5432/usuarios
+            - name: DB_USERNAME
+              valueFrom: { secretKeyRef: { name: parking-secrets, key: POSTGRES_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: parking-secrets, key: POSTGRES_PASSWORD } }
+            - { name: JWT_PRIVATE_KEY, value: "file:/run/secrets/jwt-private.pem" }
+            - { name: JWT_PUBLIC_KEY, value: "file:/run/secrets/jwt-public.pem" }
+          volumeMounts:
+            - { name: jwt, mountPath: /run/secrets, readOnly: true }
+          startupProbe:
+            httpGet: { path: /actuator/health, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health, port: http }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 150m, memory: 256Mi }
+            limits: { cpu: 750m, memory: 768Mi }
+      volumes:
+        - name: jwt
+          secret:
+            secretName: jwt-keys
+            items:
+              - { key: jwt-private.pem, path: jwt-private.pem }
+              - { key: jwt-public.pem, path: jwt-public.pem }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: usuarios
+  namespace: nexo-park
+spec:
+  selector: { app: usuarios }
+  ports:
+    - { name: http, port: 8080, targetPort: http }
