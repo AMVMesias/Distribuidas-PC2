@@ -1,3 +1,4 @@
+<a id="top"></a>
 <div align="center">
 
 <img src="frontend/src/shared/assets/nexo-park-logo.png" alt="Nexo Park Logo" width="250" />
@@ -6,14 +7,14 @@
 
 **Plataforma completa de gestión de parking con aplicación Frontend (Next.js), microservicios protegidos por Kong Gateway y mensajería asíncrona.**
 
-[Características](#-características) ·
-[Arquitectura](#-arquitectura) ·
-[Frontend](#-aplicación-frontend-nexo-park) ·
-[Inicio rápido](#-inicio-rápido) ·
-[API](#-api-pública) ·
-[Swagger UI](#-documentación-interactiva) ·
-[K8s](#-despliegue-con-kubernetes-minikube) ·
-[Operación](#-operación)
+[Características](#características) ·
+[Arquitectura](#arquitectura) ·
+[Frontend](#aplicación-frontend-nexo-park) ·
+[Inicio rápido](#inicio-rápido) ·
+[API](#api-pública) ·
+[Swagger UI](#documentación-interactiva) ·
+[K8s](#despliegue-con-kubernetes-minikube) ·
+[Operación](#operación)
 
 </div>
 
@@ -21,14 +22,14 @@
 
 ## Tabla de contenidos
 
-- [Resumen](#-resumen)
-- [Características](#-características)
-- [Arquitectura](#-arquitectura)
-- [Stack tecnológico](#-stack-tecnológico)
-- [Aplicación Frontend (Nexo Park)](#-aplicación-frontend-nexo-park)
-- [Requisitos](#-requisitos)
-- [Archivos de configuración clave](#-archivos-de-configuración-clave)
-- [Inicio rápido](#-inicio-rápido)
+- [Resumen](#resumen)
+- [Características](#características)
+- [Arquitectura](#arquitectura)
+- [Stack tecnológico](#stack-tecnológico)
+- [Aplicación Frontend (Nexo Park)](#aplicación-frontend-nexo-park)
+- [Requisitos](#requisitos)
+- [Archivos de configuración clave](#archivos-de-configuración-clave)
+- [Inicio rápido](#inicio-rápido)
   - [0. Clonar el repositorio](#0-clonar-el-repositorio)
   - [1. Configurar el entorno (.env)](#1-configurar-el-entorno-env)
   - [2A. Bootstrap con scripts (recomendado)](#2a-bootstrap-con-scripts-recomendado)
@@ -39,16 +40,17 @@
   - [6. Logs en vivo](#6-logs-en-vivo)
   - [7. Apagar y limpiar](#7-apagar-y-limpiar)
   - [Resumen de métodos lado a lado](#resumen-de-métodos-lado-a-lado)
-- [API pública](#-api-pública)
-- [Documentación interactiva](#-documentación-interactiva)
-- [Modelo de datos](#-modelo-de-datos)
-- [Seguridad](#-seguridad)
-- [Pruebas locales](#-pruebas-locales)
-- [Datos de demostración](#-datos-de-demostración)
-- [Operación](#-operación)
-- [Despliegue con Kubernetes (Minikube)](#-despliegue-con-kubernetes-minikube)
-- [Solución de problemas](#-solución-de-problemas)
-- [Estructura del repositorio](#-estructura-del-repositorio)
+- [API pública](#api-pública)
+- [Documentación interactiva](#documentación-interactiva)
+- [Modelo de datos](#modelo-de-datos)
+- [Seguridad](#seguridad)
+- [Pruebas locales](#pruebas-locales)
+- [Datos de demostración](#datos-de-demostración)
+- [Operación](#operación)
+- [Despliegue con Kubernetes (Minikube)](#despliegue-con-kubernetes-minikube)
+- [Solución de problemas](#solución-de-problemas)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Licencia](#licencia)
 
 ---
 
@@ -68,7 +70,7 @@ Plataforma distribuida de gestión de parking con **seis microservicios** indepe
 | API Gateway (Kong) | `http://localhost:8000` | Host / navegador | Único punto de entrada de la API. |
 | Backends, Postgres, RabbitMQ | — | Red interna Docker | No expuestos al host. |
 
-> La plataforma expone **OpenAPI 3** para los cinco servicios de negocio (más `ms-audit` para auditoría). El servicio `asignaciones` publica un Swagger UI que agrega las specs en una sola URL. Úsalo como punto de partida; Postman queda relegado a casos puntuales (ver [Documentación interactiva](#-documentación-interactiva)).
+> La plataforma expone **OpenAPI 3** para los cinco servicios de negocio (más `ms-audit` para auditoría). El servicio `asignaciones` publica un Swagger UI que agrega las specs en una sola URL. Úsalo como punto de partida; Postman queda relegado a casos puntuales (ver [Documentación interactiva](#documentación-interactiva)).
 
 ---
 
@@ -307,7 +309,7 @@ En todos los casos también necesitás:
 
 - **Navegador moderno** para usar la app y Swagger UI.
 - (Opcional) **PowerShell 7** si querés usar los scripts `.ps1` desde Windows.
-- (Opcional) **kubectl + Minikube** si vas a desplegar en Kubernetes (ver [Despliegue con Kubernetes](#-despliegue-con-kubernetes-minikube)).
+- (Opcional) **kubectl + Minikube** si vas a desplegar en Kubernetes (ver [Despliegue con Kubernetes](#despliegue-con-kubernetes-minikube)).
 
 ### Verificar el entorno
 
@@ -936,7 +938,7 @@ wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/<usuario>/<ruta>/Distribuidas-PC2 && 
 
 ### Colección Postman (opcional)
 
-Si prefieres Postman sobre Swagger UI (por ejemplo para *environments* por desarrollador), importa [`docs/gateway.postman_collection.json`](./docs/gateway.postman_collection.json). Las variables `baseUrl`, `accessToken` y `refreshToken` se actualizan automáticamente al ejecutar `login` y `refresh`. Para el día a día, **Swagger UI es la opción recomendada** (ver [Documentación interactiva](#-documentación-interactiva)).
+Si prefieres Postman sobre Swagger UI (por ejemplo para *environments* por desarrollador), importa [`docs/gateway.postman_collection.json`](./docs/gateway.postman_collection.json). Las variables `baseUrl`, `accessToken` y `refreshToken` se actualizan automáticamente al ejecutar `login` y `refresh`. Para el día a día, **Swagger UI es la opción recomendada** (ver [Documentación interactiva](#documentación-interactiva)).
 
 ---
 
@@ -1177,7 +1179,7 @@ Distribuidas-PC2/
 
 <div align="center">
 
-**[⬆ Volver al inicio](#gateway-distribuidas)**
+**[⬆ Volver al inicio](#top)**
 
 </div>
 
