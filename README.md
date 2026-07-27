@@ -57,7 +57,7 @@
 ## Resumen
 
 <div align="center">
-  <img src="frontend/src/shared/assets/smart-parking-hero.png" alt="Nexo Park App Interfaz" width="800" style="border-radius: 8px;" />
+  <img src="docs/screenshots/landing.png" alt="Nexo Park - Landing pública" width="900" style="border-radius: 8px;" />
 </div>
 <br/>
 
