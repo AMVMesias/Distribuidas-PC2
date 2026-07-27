@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
-import { getDictionary } from './dictionaries';
-import { Dictionary, SupportedLocale } from './types';
+import { getDictionary } from '@/shared/i18n/dictionaries';
+import { Dictionary, SupportedLocale } from '@/shared/i18n/types';
 
 interface I18nContextType {
   locale: SupportedLocale;

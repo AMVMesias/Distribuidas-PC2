@@ -1,37 +1,28 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { I18nProvider } from "@/shared/i18n/I18nContext";
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import { Providers } from '@/app/providers';
+import './globals.css';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const sans = Geist({ variable: '--font-sans', subsets: ['latin'] });
+const mono = Geist_Mono({ variable: '--font-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Distribuidas App",
-  description: "Next.js Frontend Application",
+  metadataBase: new URL('http://localhost:3000'),
+  title: { default: 'Nexo Park', template: '%s · Nexo Park' },
+  description: 'Una experiencia clara para gestionar vehículos, ingresos y tickets de parqueadero.',
+  openGraph: {
+    title: 'Nexo Park',
+    description: 'Tu parqueadero, sin vueltas.',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Nexo Park, tu parqueadero sin vueltas' }],
+  },
+  twitter: { card: 'summary_large_image', images: ['/og.png'] },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <I18nProvider initialLocale="es">
-          {children}
-        </I18nProvider>
+    <html lang="es" suppressHydrationWarning data-scroll-behavior="smooth">
+      <body className={`${sans.variable} ${mono.variable}`}>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
